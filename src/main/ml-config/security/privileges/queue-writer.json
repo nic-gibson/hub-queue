@@ -1,0 +1,6 @@
+{
+  "privilege-name" : "queue-writer",
+  "action" : "http://marklogic.com/community/queue-writer",
+  "kind" : "execute",
+  "role" : [ "common-queue-writer" ]
+}
