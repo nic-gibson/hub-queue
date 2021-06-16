@@ -111,16 +111,16 @@ __Note that both `q:source` and `q:type` may be repeated__
 __It is unwise to set more than `q:config` to match the same `source` and `type` as the first one that results from the query will be used and others silently ignored.__ 
 
 
-## Queue Ping
+## Queue Heartbeat
 
-Queue management is handled by a regular ping task. The test configuration includes a simple set of scheduled tasks to generate this ping. In a production environment, this should be handle by an external task calling the REST interface (see REST interface). Note - the REST interface does not configure a REST Server - that is the responsibility of the application user it.
+Queue management is handled by a regular  task. The test configuration includes a simple set of scheduled tasks to generate this hearbeat. In a production environment, this should be handle by an external task calling the REST interface (see REST interface). Note - the REST interface does not configure a REST Server - that is the responsibility of the application user it.
 
-The ping task reads a configuration file and uses it to create events. These are stub events which don't have associated URIs - they are used to trigger event processing. They can have a payload if required
+The hearbeat task reads a configuration file and uses it to create events. These are stub events which don't have associated URIs - they are used to trigger event processing. They can have a payload if required
 
-The ping request takes a single parameter - `id`. The ping id is used to identify events to be created. This is driven by a configuration file similar to that defined for the executors above. It contains the following fields:
+The hearbeat request takes a single parameter - `id`. The hearbeat id is used to identify events to be created. This is driven by a configuration file similar to that defined for the executors above. It contains the following fields:
 
-* id - _if the id matches the current ping id, the event is created_
-* source - _the source parameter for the newly created event (set to `ping` if not defined)
+* heartbeat-id - _if the id matches the current hearbeat id, the event is created_
+* source - _the source parameter for the newly created event (set to `heartbeat` if not defined)
 * type - _the type parameter for new created event - must be set_
 * payload - _the payload to pass to the executor via the event. See below_
 
@@ -128,3 +128,22 @@ The ping request takes a single parameter - `id`. The ping id is used to identif
 
 The `q:payload` element can contain anything that can be expressed in XML. JSON converted to XML may be used as may the XML serialization of a map. Both of these will be converted back to the 
 
+### Examples
+
+```
+<q:hearbeat-config xmlns:q="http://marklogic.com/community/queue">
+   <q:description>Generate an event every minute</q:description>
+   <q:hearbeat-id>OneMinute</q:hearbeat-id>
+   <q:source>mysource</q:source>
+   <q:type>test-type</q:source>
+</q:hearbeat-config>
+```
+
+```
+<q:hearbeat-config xmlns:q="http://marklogic.com/community/queue>
+    <q:description>Kick of a reset every five minutes</q:description>
+    <q:hearbeat-id>FiveMinute</q:hearbeat-id>
+    <q:source>http://marklogic.com/community/queue/status/internal</q:source>
+    <q:type>http://marklogic.com/community/queue/event/reset</q:type>
+</q:hearbeat-config>
+```

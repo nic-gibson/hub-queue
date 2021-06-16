@@ -213,6 +213,13 @@ declare function qc:status-new() {
      qc:collection-prefix() || 'finished'
 };
 
+(:~ 
+ : Return the source type for internal events
+:)
+declare function qc:internal-source() {
+    qc:collection-prefix() || "/source/internal"
+};
+
 (:~
  : Return the event type for the queue reset internal event type
  :)

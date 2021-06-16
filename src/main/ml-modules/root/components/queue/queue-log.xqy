@@ -58,20 +58,79 @@ declare function ql:log-events($message as xs:string, $uris as xs:string*, $even
 
 
 (:~ 
- : Write trace events with a bit of additional data when enabled
+ : Write trace events for event uris with a bit of additional data when enabled
  : @param $message
  : @param $uris
  : @return empty sequence
 :)
 declare function ql:trace($message, $uris) as empty-sequence() {
     if (xdmp:trace-enabled(qc:trace))
-        then 
-            xdmp:trace(qc:trace(), fn:string-join((
-                "message=" || $message,
-                "transaction=" || xdmp:transaction(),
-                "user=" || xdmp:get-current-user(),
-                "uris=" || fn:string-join($uris, ', ')
-
-            ), ' || '))
+        then xdmp:trace(qc:trace(), ql:format-with-uris($message, $uris))
         else ()
 };
+
+(:~ 
+ : Log event uris to the error log with a bit of additional data 
+ : @param $message
+ : @param $uris
+ : @return empty sequence
+:)
+declare function ql:error-log($message, $uris) as empty-sequence() {
+    xdmp:log(ql:format-with-uris($message, $uris))
+};
+
+
+(:~ 
+ : Write trace events with a bit of additional data when enabled
+ : @param $message
+ : @param $events 
+ : @return empty sequence
+:)
+declare function ql:trace-events($message, $events) as empty-sequence() {
+    if (xdmp:trace-enabled(qc:trace))
+        then xdmp:trace(qc:trace(), ql:format-with-events($message, $events))
+        else ()
+};
+
+(:~ 
+ : Log events to the error log with a bit of additional data when enabled
+ : @param $message
+ : @param $events 
+ : @return empty sequence
+:)
+declare function ql:error-log-events($message, $events) as empty-sequence() {
+    xdmp:log(ql:format-with-events($message, $events))
+};
+
+(:~ 
+ : Just construct the string used to write a log or trace
+ : @param $message - trace/log message
+ : @param $uris - associated uris
+:)
+declare private function ql:format-with-uris($message, $uris) {
+ fn:string-join((
+    "message=" || $message,
+    "transaction=" || xdmp:transaction(),
+    "user=" || xdmp:get-current-user(),
+    "uris=" || fn:string-join($uris, ', ')), ' || ')
+};
+
+(:~ 
+ : Just construct the string used to write a log or trace of events
+ : @param $message - trace/log message
+ : @param $events - associated events
+:)
+declare private function ql:format-with-events($message, $events) {
+ fn:string-join((
+    "message=" || $message,
+    "transaction=" || xdmp:transaction(),
+    "user=" || xdmp:get-current-user(),
+    "events=" || ql:format-events($events)
+};
+
+(:~ 
+ : Simple format of a sequence of events.
+ :)
+declare private function ql:format-events($events as element(queue:event)) as xs:string {
+    fn:string-join(($events ! ("&#x09;" || xdmp:quote(.))), "&x0A;")
+}

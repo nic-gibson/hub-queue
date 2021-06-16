@@ -1,11 +1,8 @@
 xquery version "1.0-ml";
 
 import module namespace qc = "http://marklogic.com/community/components/queue/queue-config" at "/components/queue/queue-config.xqy";
-import module namespace qh = "http://marklogic.com/community/components/queue/queue-handler" at "/components/queue/queue-handler.xqy";
-
 
 declare namespace queue = "http://marklogic.com/community/queue";
-declare namespace q="http://marklogic.com/community/queue";
 
 declare variable $q:source as xs:string external;
 declare variable $q:type as xs:string external;
@@ -15,11 +12,9 @@ declare variable $q:uris as xs:string* external;
 
 
 (:~ 
- : This is a multi purpose queue handler. It deals with events of the following types
- :      * http://marklogic.com/community/queue/event/reset
- :      * http://marklogic.com/community/queue/event/clear
- : Both of these should have the source set to 'http://marklogic.com/community/queue/status/internal'. The payload is ignored
- : for this event and there is no config.
+ : This is a test event handler. It deals with events of the following type
+ :      * http://marklogic.com/community/queue/event/ping
+ : This simply writes a message to the error log and returns the finished status. 
  :)
 
 (: Reset - actually removes documents from the queue and logs that it's done :)
