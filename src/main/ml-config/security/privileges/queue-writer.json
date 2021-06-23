@@ -1,6 +1,6 @@
 {
   "privilege-name" : "queue-writer",
-  "action" : "http://marklogic.com/community/queue-writer",
+  "action" : "http://noslogan.org/hub-queue/-writer",
   "kind" : "execute",
   "role" : [ "common-queue-writer" ]
 }

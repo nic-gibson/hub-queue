@@ -1,30 +1,35 @@
 xquery version "1.0-ml";
 
-import module namespace qc = "http://marklogic.com/community/components/queue/queue-config" at "/components/queue/queue-config.xqy";
-import module namespace qh = "http://marklogic.com/community/components/queue/queue-handler" at "/components/queue/queue-handler.xqy";
+import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "/components/queue/queue-config.xqy";
+import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "/components/queue/queue-handler.xqy";
+import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "/components/queue/queue-log.xqy";
 
 
-declare namespace queue = "http://marklogic.com/community/queue";
-declare namespace q="http://marklogic.com/community/queue";
+declare namespace queue = "http://noslogan.org/hub-queue/";
 
-declare variable $q:source as xs:string external;
-declare variable $q:type as xs:string external;
-declare variable $q:payload as item() external;
-declare variable $q:config as element(q:config)? external;
-declare variable $q:uris as xs:string* external;
+declare variable $queue:source as xs:string external;
+declare variable $queue:type as xs:string external;
+declare variable $queue:payload as item() external;
+declare variable $queue:config as element(q:config)? external;
+declare variable $queue:uris as xs:string* external;
 
 
 (:~ 
  : This is a multi purpose queue handler. It deals with events of the following types
- :      * http://marklogic.com/community/queue/event/reset
- :      * http://marklogic.com/community/queue/event/clear
- : Both of these should have the source set to 'http://marklogic.com/community/queue/status/internal'. The payload is ignored
+ :      * http://noslogan.org/hub-queue//event/reset
+ :      * http://noslogan.org/hub-queue//event/clear
+ : Both of these should have the source set to 'http://noslogan.org/hub-queue//status/internal'. The payload is ignored
  : for this event and there is no config.
  :)
 
-(: Reset - actually removes documents from the queue and logs that it's done :)
+(: clear - actually removes documents from the queue and logs that it's done :)
 if ($q:type = qc:event-clear())
-    then qh:delete-events($q:uris)
+    then qh:delete-events($queue:uris)
+
+(: reset - sets the status back to new :)
 else if ($q:type = qc:event-reset())
-    then qh:set-status($q:uris, qc:status-new())
-else ()
+    then qh:set-status($queue:uris, qc:status-new())
+
+(: We really shouldn't be here! :)
+else ql:warn-uris("QUEUE RECOVERY with wrong type", $uris, $source, $type)
+    

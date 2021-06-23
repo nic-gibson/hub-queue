@@ -1,12 +1,13 @@
 xquery version "1.0-ml";
 
-module namespace qh = "http://marklogic.com/community/components/queue/queue-heartbeat";
+module namespace qt = "http://noslogan.org/components/hub-queue/queue-heartbeat";
 
-import module namespace qc = "http://marklogic.com/community/components/queue/queue-config" at "queue-config.xqy";
-import module namespace qe = "http://marklogic.com/community/components/queue/queue-event" at "queue-event.xqy";
-import module namespace qh = "http://marklogic.com/community/components/queue/queue-handler" at "queue-hander.xqy";
+import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "queue-log.xqy";
+import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "queue-event.xqy";
+import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "queue-handler.xqy";
+import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "queue-config.xqy";
 
-declare namespace queue = "http://marklogic.com/community/queue";
+declare namespace queue = "http://noslogan.org/hub-queue/";
 
 (:~ 
  : Functions to implement the 'ping' process. This process generates 
@@ -24,9 +25,10 @@ declare option xdmp:mapping "false";
  : @param $heartbeat-type the id of the ping issued
  : @return the uris of all the events created
  :)
-declare function qh:heartbeat($heartbeat-type as xs:string) as xs:string* {
-
-
+declare function qt:heartbeat($heartbeat-type as xs:string) as xs:string* {
+    let $configs := qt:find-heartbeat-configs($heartbeat-type)
+    let $_ := ql:trace-uris("Processing heartbeat of type " || $heartbeat-type || ", found " || fn:count($configs) || " configs to process.", ())
+    return qt:create-heartbeat-events($configs)
 };
 
 
@@ -36,22 +38,32 @@ declare function qh:heartbeat($heartbeat-type as xs:string) as xs:string* {
  : @param $heartbeat-type the id of the ping issued
  : @return all configurations of that type
 :)
-declare function qh:find-heartbeat-configs($heartbeat-type as xs:string) as element(queue:heartbeat-config)* {
-    cts:search(fn:doc(), 
-        cts:element-query(
-            xs:QName('queue:heartbeat-config'), 
-            cts:true-query()))//queue:heartbeat-config
+declare function qt:find-heartbeat-configs($heartbeat-type as xs:string) as element(queue:heartbeat-config)* {
+    xdmp:invoke-function( function() {
+        cts:search(//queue:heartbeat-config, 
+            cts:and-query((
+                cts:element-query(xs:QName('queue:heartbeat-config'), cts:true-query()),
+                cts:element-value-query(xs:QName('queue:heartbeat-id'), $heartbeat-type)
+            )))
+    }, map:new() => map:with('database', xdmp:database(qc:database())))
 };
 
 (:~ 
  : Given a sequence of heartbeat configurations generate an event in the
  : queue for each one. 
 :)
-declare function qh:create-heartbeat-events($configs as element(queue:heartbeat-config)) as xs:string* {
+declare function qt:create-heartbeat-events($configs as element(queue:heartbeat-config)) as xs:string* {
     for $config in $configs 
-        return qh:write(qe:create(
-            $config/queue:type,
-            ($config/queue:source, 'heartbeat')[1],
-             $config/queue:payload/node(), 
-             ()))
+        return if ($config/queue:type) 
+            then qh:write(qe:create(
+                $config/queue:type,
+                ($config/queue:source, 'heartbeat')[1],
+                $config/queue:payload/node(), 
+                ())
+            )
+            else 
+                ql:warn-uris("Heartbeat config:&#xA0;" || xdmp:quote($config) || "&#xA0; is incomplete and will be skipped", ())
 };
+
+
+

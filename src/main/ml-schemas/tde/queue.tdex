@@ -5,7 +5,7 @@
   <path-namespaces>
   <path-namespace>
     <prefix>queue</prefix>
-    <namespace-uri>http://marklogic.com/community/queue</namespace-uri>
+    <namespace-uri>http://noslogan.org/hub-queue/</namespace-uri>
   </path-namespace>
 </path-namespaces>
   <rows>
@@ -49,14 +49,14 @@
             <val>queue:source</val>
         </column>        
         <column>
-            <name>source_transaction</name>
+            <name>transaction</name>
             <scalar-type>integer</scalar-type>
-            <val>queue:source-transaction</val>      
+            <val>queue:transaction</val>      
         </column>
         <column>
             <name>source_host</name>
             <scalar-type>string</scalar-type>
-            <val>queue:source-host</val>
+            <val>queue:host</val>
         </column>
       </columns>
     </row>

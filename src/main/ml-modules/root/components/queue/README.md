@@ -32,7 +32,7 @@ Additional permissions can be assigned using the `comQueuePermissions` gradle pr
 
 ## Queue Executor definition
 
-A _queue executor_ is a Javascript or XQuery module that is run to process a queue event. In Javascript an executor is a module which exports a `main` function which takes five parameters. In XQuery it is a main module. The parameters are passed to `main` (in this order) in Javascript and external variables in XQuery (the variables must be in the namespace `http://marklogic.com/community/queue`)
+A _queue executor_ is a Javascript or XQuery module that is run to process a queue event. In Javascript an executor is a module which exports a `main` function which takes five parameters. In XQuery it is a main module. The parameters are passed to `main` (in this order) in Javascript and external variables in XQuery (the variables must be in the namespace `http://noslogan.org/hub-queue/`)
 
 * source - _the source field from the event (a string)_
 * type - _the type field from the event (a string)_
@@ -62,7 +62,7 @@ module.exports = { main }
 ```
 xquery version "1.0-ml";
 
-declare namespace q="http://marklogic.com/community/queue";
+declare namespace q="http://noslogan.org/hub-queue/";
 
 declare variable $q:source as xs:string external;
 declare variable $q:type as xs:string external;
@@ -93,7 +93,7 @@ __Note that the `q:executor` element is root of searches so a document may conta
 
 ### Example
 
-<q:executor xmlns:q="http://marklogic.com/community/queue">
+<q:executor xmlns:q="http://noslogan.org/hub-queue/">
     <q:source>mysource</q:source>
     <q:type>test-type</q:source>
     <q:module>/queue-modules/test-type-exec.xqy</q:module>
@@ -131,7 +131,7 @@ The `q:payload` element can contain anything that can be expressed in XML. JSON 
 ### Examples
 
 ```
-<q:hearbeat-config xmlns:q="http://marklogic.com/community/queue">
+<q:hearbeat-config xmlns:q="http://noslogan.org/hub-queue/">
    <q:description>Generate an event every minute</q:description>
    <q:hearbeat-id>OneMinute</q:hearbeat-id>
    <q:source>mysource</q:source>
@@ -140,10 +140,10 @@ The `q:payload` element can contain anything that can be expressed in XML. JSON 
 ```
 
 ```
-<q:hearbeat-config xmlns:q="http://marklogic.com/community/queue>
+<q:hearbeat-config xmlns:q="http://noslogan.org/hub-queue/>
     <q:description>Kick of a reset every five minutes</q:description>
     <q:hearbeat-id>FiveMinute</q:hearbeat-id>
-    <q:source>http://marklogic.com/community/queue/status/internal</q:source>
-    <q:type>http://marklogic.com/community/queue/event/reset</q:type>
+    <q:source>http://noslogan.org/hub-queue//status/internal</q:source>
+    <q:type>http://noslogan.org/hub-queue//event/reset</q:type>
 </q:hearbeat-config>
 ```

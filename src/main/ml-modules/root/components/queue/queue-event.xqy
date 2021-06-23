@@ -1,10 +1,11 @@
 xquery version "1.0-ml";
 
-module namespace qe = "http://marklogic.com/community/components/queue/queue-event";
+module namespace qe = "http://noslogan.org/components/hub-queue/queue-event";
 
-import module namespace qc = "http://marklogic.com/community/components/queue/queue-config" at "queue-config.xqy";
+import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "queue-config.xqy";
+import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "queue-log.xqy";
 
-declare namespace queue = "http://marklogic.com/community/queue";
+declare namespace queue = "http://noslogan.org/hub-queue/";
 declare namespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
 declare namespace json = "http://marklogic.com/xdmp/json";
 
@@ -24,7 +25,20 @@ declare option xdmp:mapping "false";
 :)
 declare function qe:create($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*) as element(queue:event) {
 
-    element queue:event {
+    (: these can't be empty :)
+    let $_ := if (fn:not($type and $source) )
+        then fn:error(
+            xs:QName("queue:BADEVENTDEFINITION"), 
+            "event source and type must both be non empty strings.",
+            map:new() 
+                => map:with('type', $type)
+                => map:with('source', $source)
+                => map:with('payload', $payload)
+                => map:with('uris', $uris)
+        )
+        else ()
+        
+    let $event := element queue:event {
         element queue:id { sem:uuid-string() },
         element queue:type { $type },
         element queue:source { $source },
@@ -37,6 +51,11 @@ declare function qe:create($type as xs:string, $source as xs:string, $payload as
             $uris ! element queue:uri { . }
         }
     }
+
+    return (
+        ql:trace-events("New event", $event),
+        $event
+    )
 };
 
 (:~

@@ -1,11 +1,11 @@
 xquery version "1.0-ml";
 
-import module namespace qc = "http://marklogic.com/community/components/queue/queue-config" at "/components/queue/queue-config.xqy";
-import module namespace qh = "http://marklogic.com/community/components/queue/queue-handler" at "/components/queue/queue-handler.xqy";
+import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "/components/queue/queue-config.xqy";
+import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "/components/queue/queue-handler.xqy";
 
 
-declare namespace queue = "http://marklogic.com/community/queue";
-declare namespace q="http://marklogic.com/community/queue";
+declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace q="http://noslogan.org/hub-queue/";
 
 declare variable $q:source as xs:string external;
 declare variable $q:type as xs:string external;

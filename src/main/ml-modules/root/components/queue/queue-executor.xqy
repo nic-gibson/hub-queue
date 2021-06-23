@@ -1,8 +1,8 @@
 xquery version "1.0-ml";
 
-module namespace qx = "http://marklogic.com/community/components/queue/queue-executor";
+module namespace qx = "http://noslogan.org/components/hub-queue/queue-executor";
 
-declare namespace queue = "http://marklogic.com/community/queue";
+declare namespace queue = "http://noslogan.org/hub-queue/";
 
 declare option xdmp:mapping "false";
 

@@ -1,15 +1,15 @@
 xquery version "1.0-ml";
 
-module namespace qh = "http://marklogic.com/community/components/queue/queue-handler";
+module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler";
 
-import module namespace qc = "http://marklogic.com/community/components/queue/queue-config" at "queue-config.xqy";
-import module namespace qe = "http://marklogic.com/community/components/queue/queue-event" at "queue-event.xqy";
-import module namespace ql = "http://marklogic.com/community/components/queue/queue-log" at "queue-log.xqy";
+import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "queue-config.xqy";
+import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "queue-event.xqy";
+import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "queue-log.xqy";
 
 import module namespace op = "http://marklogic.com/optic" at "/MarkLogic/optic.xqy";
 
 
-declare namespace queue = "http://marklogic.com/community/queue";
+declare namespace queue = "http://noslogan.org/hub-queue/";
 
 (:~ Code that deals with queue documents in the database :)
 
@@ -49,7 +49,7 @@ declare option xdmp:mapping "false";
                             => map:with(qc:timestamp-metadata-name(), fn:current-dateTime())
                         )
                 ), 
-                ql:trace("New events", $uri),
+                ql:trace-uris("New event", $uri),
                 $uri
             )
         else xdmp:invoke-function( 
@@ -73,8 +73,8 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) {
             => map:with('timestamp', fn:current-dateTime()))
 
     return (
-        ql:trace("Status updated to  " || $status, $uris),
-        ql:log-events("Status set to " || $status, $uris, if (qc:detailed-log()) then  ($uris ! fn:doc(.)) else (), (), ())
+        ql:trace-uris("Status updated to  " || $status, $uris),
+        ql:audit-events("Status set to " || $status, $uris, if (qc:detailed-log()) then  ($uris ! fn:doc(.)) else (), (), ())
     )
 };
 
@@ -176,6 +176,6 @@ declare function qh:delete-events($uris as xs:string*) as empty-sequence() {
 
       let $_ := $uris ! xdmp:document-delete(.)
 
-      return ql:log-events("Events deleted", $uris, $events, $statuses, $timestamps)
+      return ql:audit-events("Events deleted", $uris, $events, $statuses, $timestamps)
 
   };

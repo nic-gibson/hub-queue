@@ -1,24 +1,24 @@
 xquery version "1.0-ml";
 
-module namespace qc = "http://marklogic.com/community/components/queue/queue-config";
-declare namespace queue = "http://marklogic.com/community/queue";
+module namespace qc = "http://noslogan.org/components/hub-queue/queue-config";
+declare namespace queue = "http://noslogan.org/hub-queue/";
 
 declare option xdmp:mapping "false";
 
 (:~
  : Get the name of the trace event to be used. Returns the value of the `comQueueTrace` gradle
- : property if set and the default ("community.queue") if not set.
+ : property if set and the default ("hub.queue") if not set.
 :)
 declare function qc:trace() as xs:string {
-    qc:token("%%comQueueTrace%%", "community.queue")
+    qc:token("%%comQueueTrace%%", "hub.queue")
 };
 
 (:~
  : Get the name of the prefix used for queue URIs. If set, the value of the gradle 
- : `comQueuePrefix` property is used. If not the default is returned ("/marklogic/community/queue/")
+ : `comQueuePrefix` property is used. If not the default is returned ("/noslogan.org/hub-queue/queue/")
  :)
 declare function qc:uri-prefix() as xs:string {
-    let $prefix := qc:token("%%comQueuePrefix%%", "/marklogic/community/queue")
+    let $prefix := qc:token("%%comQueuePrefix%%", "/noslogan.org/hub-queue/queue")
     return if (fn:ends-with($prefix, '/')) then $prefix else $prefix || '/'
 };
 
@@ -29,7 +29,7 @@ declare function qc:uri-prefix() as xs:string {
  : @return the name of the main queue collection
  :)
 declare function qc:collection() as xs:string {
-    qc:token("%%comQueueCollection%%", "http://marklogic.com/community/queue")
+    qc:token("%%comQueueCollection%%", "http://noslogan.org/hub-queue/")
 };
 
 (:~ 
@@ -63,7 +63,7 @@ declare function qc:additional-permissions() as map:map* {
                 "The permissions string must consist of paired values.",
                 map:entry('permissions', $permission-string))
         else 
-            let $roles := $tokens[position() mod 2 = 1] = 1
+            let $roles := $tokens[position() mod 2 = 1]
             let $capabilities := $tokens[position() mod 2 = 0]
             return for $role at $n in $roles 
                 (: this will raise an exception if either capability or role is wrong :)

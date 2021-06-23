@@ -1,9 +1,9 @@
-<queue:event xmlns:queue="http://marklogic.com/community/queue">
+<queue:event xmlns:queue="http://noslogan.org/hub-queue/">
     <queue:id>10f5a58d-8c14-4cae-981d-6a67d644df65</queue:id>
     <queue:type>test-job</queue:type>
     <queue:source>testing19</queue:source>
-    <queue:source-transaction>15710557944335112285</queue:source-transaction>
-    <queue:source-host>newt.noslogan.org</queue:source-host>
+    <queue:transaction>15710557944335112285</queue:transaction>
+    <queue:host>newt.noslogan.org</queue:host>
     <queue:creation-timestamp>2021-06-08T21:20:09.372938+01:00</queue:creation-timestamp>
     <queue:payload kind="element">
         <foo>
