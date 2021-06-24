@@ -1,4 +1,4 @@
 {
-  "role-name" : "common-queue-writer",
+  "role-name" : "hub-queue-writer",
   "description" : "Role that has write permission for queue documents"
 }

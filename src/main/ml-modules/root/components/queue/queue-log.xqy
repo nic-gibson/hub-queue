@@ -19,9 +19,10 @@ declare option xdmp:mapping "false";
  : @param $events a sequence of zero or more events (in order with $uris)
  : @param $status the matching statuses for the nodes (used when documents have been deleted)
  : @param $timestamp the matching timestamps for the nodes (used when documents have been deleted)
+ : @param $errors any errors to be included in the audit
  : @return empty sequence
  :)
-declare function ql:audit-events($message as xs:string, $uris as xs:string*, $events as element(queue:event)*, $statuses as xs:string*, $timestamps as xs:dateTime*) as empty-sequence() {
+declare function ql:audit-events($message as xs:string, $uris as xs:string*, $events as element(queue:event)*, $statuses as xs:string*, $timestamps as xs:dateTime*, $errors as item()*) as empty-sequence() {
 
     if (xdmp:database() = xdmp:database(qc:log-database())) 
         then xdmp:document-insert(
@@ -35,6 +36,9 @@ declare function ql:audit-events($message as xs:string, $uris as xs:string*, $ev
                 element queue:uris {
                     $uris ! element queue:uri { . }
                 },
+                if (fn:exists($errors))
+                    then element queue:errors { $errors }
+                    else (),
                 if (qc:detailed-log()) 
                     then element queue:events {
                         for $event at $pos in $events return  element queue:event {
@@ -76,7 +80,7 @@ declare function ql:trace-uris($message as xs:string, $uris as xs:string*) as em
 :)
 declare function ql:trace-uris($message as xs:string, $uris as xs:string*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
     if (xdmp:trace-enabled(qc:trace()))
-        then xdmp:trace(qc:trace(), ql:format-with-uris($message, $uris, $source, $type))
+        then xdmp:trace(qc:trace(), ql:format-with-uris($message, $uris, $source, $type, ()))
         else ()
 };
 
@@ -99,7 +103,7 @@ declare function ql:log-uris($message as xs:string, $uris as xs:string*) as empt
  : @return empty sequence
 :)
 declare function ql:log-uris($message as xs:string, $uris as xs:string*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
-    xdmp:log(ql:format-with-uris($message, $uris, $source, $type))
+    xdmp:log(ql:format-with-uris($message, $uris, $source, $type, ()))
 };
 
 (:~ 
@@ -121,7 +125,31 @@ declare function ql:warn-uris($message as xs:string, $uris as xs:string*) as emp
  : @return empty sequence
 :)
 declare function ql:warn-uris($message as xs:string, $uris as xs:string*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
-    xdmp:log(ql:format-with-uris($message, $uris, $source, $type), 'warning')
+    xdmp:log(ql:format-with-uris($message, $uris, $source, $type, ()), 'warning')
+};
+
+
+
+(:~ 
+ : Log event uris to the error log with a bit of additional data as ERROR level logging
+ : @param $message - text to log
+ : @param $uris - sequence of uris
+ : @return empty sequence
+:)
+declare function ql:error-uris($message as xs:string, $error as item()?, $uris as xs:string*) as empty-sequence() {
+    ql:error-uris($message, $error, $uris, (), ())
+};
+
+(:~ 
+ : Log event uris to the error log with a bit of additional data as ERROR level logging
+ : @param $message - text to log
+ : @param $uris - sequence of uris
+ : @param $source - optional source string
+ : @param $type - optional type string
+ : @return empty sequence
+:)
+declare function ql:error-uris($message as xs:string, $error as item()?, $uris as xs:string*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
+    xdmp:log(ql:format-with-uris($message, $uris, $source, $type, ()), 'error')
 };
 
 (:~ 
@@ -144,7 +172,7 @@ declare function ql:trace-events($message, $events) as empty-sequence() {
 :)
 declare function ql:trace-events($message as xs:string, $events as element(queue:event)*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
     if (xdmp:trace-enabled(qc:trace()))
-        then xdmp:trace(qc:trace(), ql:format-with-events($message, $events, $source, $type))
+        then xdmp:trace(qc:trace(), ql:format-with-events($message, $events, $source, $type, ()))
         else ()
 };
 
@@ -167,7 +195,7 @@ declare function ql:log-events($message as xs:string, $events as element(queue:e
  : @return empty sequence
 :)
 declare function ql:log-events($message as xs:string, $events as element(queue:event)*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
-    xdmp:log(ql:format-with-events($message, $events, $source, $type))
+    xdmp:log(ql:format-with-events($message, $events, $source, $type, ()))
 };
 
 (:~ 
@@ -189,7 +217,30 @@ declare function ql:warn-events($message as xs:string, $events as element(queue:
  : @return empty sequence
 :)
 declare function ql:warn-events($message as xs:string, $events as element(queue:event)*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
-    xdmp:log(ql:format-with-events($message, $events, $source, $type), 'warning')
+    xdmp:log(ql:format-with-events($message, $events, $source, $type, ()), 'warning')
+};
+
+(:~ 
+ : Log events to the error log with a bit of additional data when enabled as ERROR level logging
+ : @param $message
+ : @param $error - error if provided
+ : @param $events 
+ : @return empty sequence
+:)
+declare function ql:error-events($message as xs:string, $error as item()?, $events as element(queue:event)*) as empty-sequence() {
+    ql:error-events($message, $error, $events, (), ())
+};
+
+(:~ 
+ : Log events to the error log with a bit of additional data when enabled as ERROR level logging
+ : @param $message
+ : @param $events 
+ : @param $source the source string if provided
+ : @param $type - the type string if provided
+ : @return empty sequence
+:)
+declare function ql:error-events($message as xs:string, $error as item()?, $events as element(queue:event)*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
+    xdmp:log(ql:format-with-events($message, $events, $source, $type, $error), 'error')
 };
 
 (:~ 
@@ -198,15 +249,17 @@ declare function ql:warn-events($message as xs:string, $events as element(queue:
  : @param $uris - associated uris
  : @param $source the source string if provided
  : @param $type - the type string if provided
+ : @param $error - error if provided
 :)
-declare private function ql:format-with-uris($message as xs:string, $uris as xs:string*, $source as xs:string?, $type as xs:string?) {
+declare private function ql:format-with-uris($message as xs:string, $uris as xs:string*, $source as xs:string?, $type as xs:string?, $error as item()?) {
  fn:string-join((
     "message=" || $message,
     if (fn:exists($source)) then "source=" || $source else (),
     if (fn:exists($type)) then "type=" || $type else (),
     "transaction=" || xdmp:transaction(),
     "user=" || xdmp:get-current-user(),
-    "uris=" || fn:string-join($uris, ', ')), ' || ')
+    "uris=" || fn:string-join($uris, ', '),
+    if (fn:exists($error)) then "error=" || xdmp:quote($error) else ()), ' || ')
 };
 
 (:~ 
@@ -215,15 +268,17 @@ declare private function ql:format-with-uris($message as xs:string, $uris as xs:
  : @param $events - associated events
  : @param $source the source string if provided
  : @param $type - the type string if provided
+ : @param $error - error if provided
 :)
-declare private function ql:format-with-events($message as xs:string, $events as element(queue:event)*, $source as xs:string?, $type as xs:string?) {
+declare private function ql:format-with-events($message as xs:string, $events as element(queue:event)*, $source as xs:string?, $type as xs:string?, $error as item()?) {
  fn:string-join((
     "message=" || $message,
     if (fn:exists($source)) then "source=" || $source else (),
     if (fn:exists($type)) then "type=" || $type else (),   
     "transaction=" || xdmp:transaction(),
     "user=" || xdmp:get-current-user(),
-    "events=" || ql:format-events($events) ), ' || ')
+    "events=" || ql:format-events($events),
+    if (fn:exists($error)) then "error=" || xdmp:quote($error) else ()), ' || ')
 };
 
 (:~ 

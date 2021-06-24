@@ -39,7 +39,8 @@ A _queue executor_ is a Javascript or XQuery module that is run to process a que
 * payload - _the payload from the event (an item())_
 * uris - _the sequence of URIs assigned to the event (a sequence of strings in XQuery, an array of them in Javascript)_
 * config - _the config element from the queue configuration document (if present)_
-  
+
+The queue function is executed in an isolated transaction with update set to true. declareUpdate is set on the javascript module
 
 ### Javascript example
 
