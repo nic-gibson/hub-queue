@@ -9,7 +9,7 @@ import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log
 import module namespace op = "http://marklogic.com/optic" at "/MarkLogic/optic.xqy";
 
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 (:~ Code that deals with queue documents in the database :)
 
@@ -156,11 +156,9 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) as empt
  };
 
 (:~ 
- : Handle physical deletion of events when either failed or completed 
- : The delete step also logs the deletion. If detailed logging is enabled then
- : the events themselves are logged too (so they are retrieved before deletion)
- : @param $uris the URIs of the events to delete
- : @return empty sequence
+ : Identify events that are to be deleted and return their
+ : uris
+ : @return sequence of uris
 :)
 declare function qh:event-uris-for-deletion() as xs:string* {
 
@@ -173,8 +171,45 @@ declare function qh:event-uris-for-deletion() as xs:string* {
             op:eq(op:col('status'), qc:status-finished())))
         => op:select('uri')
         => op:result('object')) ! map:get(., 'queue.queue.uri')
+};
 
-  };
+
+(:~ 
+ : Find events with new status that are, in effect, timed out. 
+ : These have been marked as new in the queue for too long.
+ : We define "too long" as the updated time being longer ago than
+ : our timeout. 
+ : @return the URIs of the timed out documents
+:)
+declare function qh:new-event-uris-for-timeout() as xs:string* {
+    qh:timeouts-by-status(qc:status-new(), qc:new-timeout())
+};
+
+
+(:~ 
+ : Find events with pending status that are, in effect, timed out. 
+ : These have been marked as pending in the queue for too long.
+ : We define "too long" as the updated time being longer ago than
+ : our timeout. 
+ : @return the URIs of the timed out documents
+:)
+declare function qh:pending-event-uris-for-timeout() as xs:string* {
+    qh:timeouts-by-status(qc:status-pending(), qc:pending-timeout())
+};
+
+
+(:~ 
+ : Find events with executing status that are, in effect, timed out. 
+ : These have been marked as executing in the queue for too long.
+ : We define "too long" as the updated time being longer ago than
+ : the maximum execution time for a request
+ : @return the URIs of the timed out documents
+:)
+declare function qh:pending-event-uris-for-timeout() as xs:string* {
+    qh:timeouts-by-status(qc:status-executing(), qc:execution-timeout())
+};
+
+
 
 (:~ 
  : Handle physical deletion of events when either failed or completed 
@@ -205,10 +240,32 @@ declare function qh:delete-events($uris as xs:string*) as empty-sequence() {
  : @param $status an optional status
  : @return the event
  :)
- declare function qh:get-event($uri as xs:string, $status as xs:string?) as element(queue:event)? {
+declare function qh:get-event($uri as xs:string, $status as xs:string?) as element(queue:event)? {
     (   
         xdmp:security-assert(qc:queue-privilege, 'execute'),
         if (fn:exists($tatus)) then qh:set-status($uri, $status) else (),
         xdmp:invoke-function( function() { fn:doc($uri) }, map:new() => map:with('database', qc:database())
     )
- };
+};
+
+
+(:~ 
+ : Search for event URIs by age and current status. Any document older than the
+ : timeout with the desired status is returned
+ : @param $status the current status
+ : @param $duration an xs:dayTimeDuration to be subtracted from the current time 
+ : @return a sequence of zero or more URIs
+:)
+declare function qh:timeouts-by-status($status as xs:string, $duration as xs:dayTimeDuration) as xs:string* {
+
+    let $_ := xdmp:security-assert(qc:queue-privilege, 'execute')
+    let $max-age := fn:current-dateTime() - $duration
+
+    return (op:from-view('queue', 'queue', ())
+        => op:order-by('updated')
+        => op:where(op:and(
+            op:eq(op:col('status'), $statu),
+            op:lt(op:col('updated'), $max-age)))
+        => op:select('uri')
+        => op:result('object')) ! map:get(., 'queue.queue.uri')
+};

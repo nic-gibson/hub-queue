@@ -4,7 +4,7 @@ import module namespace test = "http://marklogic.com/test" at "/test/test-helper
 import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "/components/queue/queue-event.xqy";
 import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "/components/queue/queue-handler.xqy";
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 
 declare option xdmp:mapping "false";

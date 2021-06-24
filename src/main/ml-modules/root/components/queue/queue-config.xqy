@@ -1,35 +1,39 @@
 xquery version "1.0-ml";
 
 module namespace qc = "http://noslogan.org/components/hub-queue/queue-config";
-declare namespace queue = "http://noslogan.org/hub-queue/";
+
+import module namespace admin = "http://marklogic.com/xdmp/admin" at "/MarkLogic/admin.xqy";
+
+
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 declare option xdmp:mapping "false";
 
 (:~
- : Get the name of the trace event to be used. Returns the value of the `comQueueTrace` gradle
+ : Get the name of the trace event to be used. Returns the value of the `queueTrace` gradle
  : property if set and the default ("hub.queue") if not set.
 :)
 declare function qc:trace() as xs:string {
-    qc:token("%%comQueueTrace%%", "hub.queue")
+    qc:token("%%queueTrace%%", "hub.queue")
 };
 
 (:~
  : Get the name of the prefix used for queue URIs. If set, the value of the gradle 
- : `comQueuePrefix` property is used. If not the default is returned ("/noslogan.org/hub-queue/queue/")
+ : `queuePrefix` property is used. If not the default is returned ("/noslogan.org/hub-queue/queue/")
  :)
 declare function qc:uri-prefix() as xs:string {
-    let $prefix := qc:token("%%comQueuePrefix%%", "/noslogan.org/hub-queue/queue")
+    let $prefix := qc:token("%%queuePrefix%%", "/noslogan.org/hub-queue/queue")
     return if (fn:ends-with($prefix, '/')) then $prefix else $prefix || '/'
 };
 
 (:~ 
  : Get the name of the collection to use for queued documents.  This collection name is also 
  : used as the base of the state collection names
- : Gives the value of the `comQueueCollection` gradle property if set and the default if not.
+ : Gives the value of the `queueCollection` gradle property if set and the default if not.
  : @return the name of the main queue collection
  :)
 declare function qc:collection() as xs:string {
-    qc:token("%%comQueueCollection%%", "http://noslogan.org/hub-queue/")
+    qc:token("%%queueCollection%%", "http://noslogan.org/hub-queue/")
 };
 
 (:~ 
@@ -38,7 +42,7 @@ declare function qc:collection() as xs:string {
  : @return the role name
  :)
 declare function qc:writer-role() as xs:string {
-    qc:token(("%%comQueueWriterRole%%", "%%mlFlowOperatorRole%%"), "rest-writer")
+    qc:token("%%queueWriterRole%%", "rest-writer")
 };
 
 (:~ Get the name of the role used for queue read permissions.
@@ -46,14 +50,14 @@ declare function qc:writer-role() as xs:string {
  : @return the role name
  :)
 declare function qc:reader-role() as xs:string {
-    qc:token(("%%comQueueReaderRole%%", "%%mlFlowOperatorRole%%"), "rest-reader", fn:true())
+    qc:token(("%%queueReaderRole%%", "%%mlFlowOperatorRole%%"), "rest-reader", fn:true())
 };
 
 (:~ Get any additional permissions to be assigned 
  : @return a sequence of sec:permission objects
 :)
 declare function qc:additional-permissions() as map:map* {
-    let $permission-string := qc:token("%%comQueuePermissions%%", '')
+    let $permission-string := qc:token("%%queuePermissions%%", '')
     let $tokens := if ($permission-string = '') then () else fn:tokenize($permission-string, '\s*,\s*')
 
     (: if it's not divisible by two something is wrong :)
@@ -89,7 +93,7 @@ declare function qc:permissions() as map:map* {
  : external event sources might use it too
 :)
 declare function qc:max-uris() as xs:integer {
-    qc:token("%%comQueueMaximumURIs%%", 500)
+    qc:token("%%queueMaximumURIs%%", 500)
 };
  
 (:~ 
@@ -101,7 +105,7 @@ declare function qc:max-uris() as xs:integer {
  : @return the name of the database to write the queue to.
  :)
  declare function qc:database() as xs:string {
-    let $name := qc:token(("%%comQueueDatabase%%", "%%mlStagingDbName%%", "%%mlContentDatabaseName%%", "%%mlAppName%%"), xdmp:database-name(xdmp:database()))
+    let $name := qc:token(("%%queueDatabase%%", "%%mlStagingDbName%%", "%%mlContentDatabaseName%%", "%%mlAppName%%"), xdmp:database-name(xdmp:database()))
     return if (qc:database-exists($name)) 
         then $name 
         else if (qc:database-exists($name || "-content"))
@@ -111,20 +115,40 @@ declare function qc:max-uris() as xs:integer {
 
 (:~ 
  : Get the duration after which a pending event is considered to have timed out and 
- : should be returned to new status. This can be set using the `comQueuePendingTimeout` gradle
+ : should be returned to new status. This can be set using the `queuePendingTimeout` gradle
  : property. The value must be a valid day/time duration. If not set a duration corresponding to 
  : 30 minutes is returned
 :)
 declare function qc:pending-timeout() as xs:dayTimeDuration {
-    xs:dayTimeDuration(qc:token("%%comQueuePendingTimeout%%", "PT30M"))
+    xs:dayTimeDuration(qc:token("%%queuePendingTimeout%%", "PT30M"))
 };
 
+(:~ 
+ : Get the duration after which a new event is considered to have timed out and 
+ : should be set to failed status. This can be set using the `queueNewTimeout` gradle
+ : property. The value must be a valid day/time duration. If not set a duration corresponding to 
+ : 60 minutes is returned
+:)
+declare function qc:new-timeout() as xs:dayTimeDuration {
+    xs:dayTimeDuration(qc:token("%%queueNewTimeout%%", "PT60M"))
+};
+
+(:~ 
+ : Query the app server configuration for the maximum requestion execution time for this
+ : app server. This is used to determine if an event marked as executing has been timed out.
+:)
+declare function qc:execution-timeout() as xs:dayTimeDuration {
+
+    xs:dayTimeDuration('PT' || xs:string(admin:appserver-get-max-time-limit(admin:get-configuration(), xdmp:server())) || "S")
+
+
+};
 
 (:~
  : Return true if detailed logging is enabled 
 :)
 declare function qc:detailed-log() as xs:boolean {
-    fn:lower-case(qc:token("%%comQueueDetailedLog%%", 'false')) = 'true'
+    fn:lower-case(qc:token("%%queueDetailedLog%%", 'false')) = 'true'
 };
 
 (:~
@@ -133,7 +157,7 @@ declare function qc:detailed-log() as xs:boolean {
  : is written to.
  :)
  declare function qc:log-database() as xs:string {
-    let $name := qc:token(("%%mlJobDbName%%", "%%comQueueDatabase%%", "%%mlStagingDbName%%", "%%mlContentDatabaseName%%", "%%mlAppName%%"), xdmp:database-name(xdmp:database()))
+    let $name := qc:token(("%%mlJobDbName%%", "%%queueDatabase%%", "%%mlStagingDbName%%", "%%mlContentDatabaseName%%", "%%mlAppName%%"), xdmp:database-name(xdmp:database()))
     return if (qc:database-exists($name)) 
         then $name 
         else if (qc:database-exists($name || "-content"))
@@ -143,34 +167,34 @@ declare function qc:detailed-log() as xs:boolean {
 
 (:~ 
  : Return log URI prefix to use.
- : If not defined in comQueueLogPrefix then the normal prefix with 'log' appended
+ : If not defined in queueLogPrefix then the normal prefix with 'log' appended
  : is used
  :)
  declare function qc:log-prefix() as xs:string {
-     qc:token('%%comQueueLogPrefix%%', qc:uri-prefix() || 'log/' )
+     qc:token('%%queueLogPrefix%%', qc:uri-prefix() || 'log/' )
  };
 
 (:~ 
  : Return log collection  to use.
- : If not defined in comQueueLogCollection then the base queue collection with 'log' appended
+ : If not defined in queueLogCollection then the base queue collection with 'log' appended
  : is used
  :)
  declare function qc:log-collection() as xs:string {
-     qc:token('%%comQueueLogCollection%%', qc:collection() || '/log/' )
+     qc:token('%%queueLogCollection%%', qc:collection() || '/log/' )
  };
 
 (:~ 
  : REturn the name of the metadata item used to store status
 :)
 declare function qc:status-metadata-name() as xs:string {
-    qc:token("%%comQueueStatusMetadata", 'queue-status')
+    qc:token("%%queueStatusMetadata", 'queue-status')
 };
 
 (:~
  : Return the name of the metadata item used to store the timestamp
 :)
 declare function qc:timestamp-metadata-name() as xs:string {
-    qc:token("%%comQueueTimestampMetadata", 'queue-timestamp')
+    qc:token("%%queueTimestampMetadata", 'queue-timestamp')
 };
 
 
@@ -232,6 +256,13 @@ declare function qc:event-reset() {
  :)
 declare function qc:event-clear() {
     qc:collection-prefix() || '/event/clear'
+};
+
+(:~
+ : Return the event type for the queue clear internal event type
+ :)
+declare function qc:event-update-status() {
+    qc:collection-prefix() || '/event/update-status'
 };
 
 

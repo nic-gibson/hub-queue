@@ -5,7 +5,7 @@ module namespace qe = "http://noslogan.org/components/hub-queue/queue-event";
 import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "queue-config.xqy";
 import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "queue-log.xqy";
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 declare namespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
 declare namespace json = "http://marklogic.com/xdmp/json";
 
@@ -15,6 +15,24 @@ declare option xdmp:mapping "false";
  : functions returning the various components of the  event to allow it to be treated as an opaque entity 
 :)
 
+
+(:~ 
+ : Create one or more events by breaking up the URIs to be more than the configured maximum 
+ : @param $type the queue event type used to define the processor to be applied when the queue event is applied
+ : @param $source a string used to indentify the creator of the event
+ : @param $payload the data to be passed to the queue processor
+ : @param $uris the sequence of URIs to be processed
+ : @return a queue event element to be stored into the queue
+:)
+declare function qe:create-batch($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*) as element(queue:event) {
+
+    for $n in 1 to xs:integer(fn:ceil(fn:count($uris) div qc:max-uris()))
+        let $start := ($n - 1) * qc:max-uris() + 1
+        return qe:create($type, $source, $payload, 
+            fn:subsequence($uris, 
+                ($n - 1) * qc:max-uris() + 1, 
+                qc:max-uris()))
+};
 (:~
  : Create a new queue event element ready to be stored to the queue. 
  : @param $type the queue event type used to define the processor to be applied when the queue event is applied

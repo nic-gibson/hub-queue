@@ -7,7 +7,7 @@ import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log
 import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "queue-event.xqy";
 
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 declare option xdmp:mapping "false";
 
@@ -63,13 +63,15 @@ declare function qx:handle-event($uri as xs:string) as xs:string? {
 :)
 declare function qx:find-executor($event as element(queue:event)) as element(queue:executor)? {
 
-    (cts:search(
-        fn:doc(),
-        cts:element-query(xs:QName('queue:executor'),
-            cts:and-query((
-                cts:element-value-query('queue:type', $event/queue:type),
-                cts:element-value-query('queue:source', $event/queue:source)
-            ))))//queue:executor)[1]
+    xdmp:invoke-function(function() {
+        (cts:search(
+            fn:doc(),
+            cts:element-query(xs:QName('queue:executor'),
+                cts:and-query((
+                    cts:element-value-query('queue:type', $event/queue:type),
+                    cts:element-value-query('queue:source', $event/queue:source)
+                ))))//queue:executor)[1]
+    }, map:new() => map:with('database', xdmp:modules-database())
 };
 
 

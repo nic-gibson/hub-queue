@@ -7,7 +7,7 @@ import module namespace qe = "http://noslogan.org/components/hub-queue/queue-eve
 import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "queue-handler.xqy";
 import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "queue-config.xqy";
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 (:~ 
  : Functions to implement the 'ping' process. This process generates 
@@ -45,7 +45,7 @@ declare function qt:find-heartbeat-configs($heartbeat-type as xs:string) as elem
                 cts:element-query(xs:QName('queue:heartbeat-config'), cts:true-query()),
                 cts:element-value-query(xs:QName('queue:heartbeat-id'), $heartbeat-type)
             )))
-    }, map:new() => map:with('database', xdmp:database(qc:database())))
+    }, map:new() => map:with('database', xdmp:database(xdmp:modules-database())))
 };
 
 (:~ 

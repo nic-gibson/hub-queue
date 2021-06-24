@@ -4,31 +4,15 @@ This component implements a simple queue persisted into the database. The queue 
 
 An event consists of some metadata, a task specific payload and a list of URIs. The metadata includes a name used to identify a process that can handle the payload.
 
-Both synchronous and asynchronous execution follow the same path
-    1) Mark the event as in progress
-    2) Create an anonymous function to wrap the function that does the following
-       1) In a separate transaction mark the event as in progress including a timestamp
-       2) Find the function to execute and get a reference to it
-       3) Execute the function wrapped in a try/catch
-       4) Mark as failed if an error occurs, write an audit
-
-
-
 
 ## Permissions
 
-Queue documents are assigned permissions. The update permission is assigned to the first defined role of
-    * `comQueueWriterRole`
+Queue documents are restricted such that only users with the `queue-writer` role may access them. The name of this role can be redefined using
+the `queueWriterRole` gradle property. If not defined permission is assigned to the first defined role of
     * `mlFlowOperatorRole`
     * `rest-writer`
 
-The read permission is assigned to the first defined role of
-    * `comQueueReaderRole`
-    * `mlFlowOperatorRole`
-    * `rest-reader`
-
-Additional permissions can be assigned using the `comQueuePermissions` gradle property. This must consist of comma separated role name, capability pairs (e.g. "rest-writer,update,rest-reader,read")
-
+Functions which directly access the queue documents are amped to ensure they can access the documents.
 
 ## Queue Executor definition
 
@@ -81,7 +65,7 @@ The result of the call is used as the new status for the queue entry. If nothing
 
 ## Configuration
 
-Queue configuration is done using an XML documents. These document can be stored anywhere in the same database as the queue itself as search is used to identify queue configurations. A configuration document contains the following:
+Queue configuration is done using an XML documents. These document can be stored anywhere in the modules database as search is used to identify queue configurations. A configuration document contains the following:
 
 * source - _matching source name or names (the source is intended as a way to group types)_
 * type - _matching type or types (intended as a way to be more specific - subsetting the source)_
@@ -132,19 +116,56 @@ The `q:payload` element can contain anything that can be expressed in XML. JSON 
 ### Examples
 
 ```
-<q:hearbeat-config xmlns:q="http://noslogan.org/hub-queue/">
+<q:heartbeat-config xmlns:q="http://noslogan.org/hub-queue/">
    <q:description>Generate an event every minute</q:description>
    <q:hearbeat-id>OneMinute</q:hearbeat-id>
    <q:source>mysource</q:source>
-   <q:type>test-type</q:source>
-</q:hearbeat-config>
+   <q:type>test-type</q:type>
+</q:heartbeat-config>
 ```
 
 ```
-<q:hearbeat-config xmlns:q="http://noslogan.org/hub-queue/>
+<q:heartbeat-config xmlns:q="http://noslogan.org/hub-queue/>
     <q:description>Kick of a reset every five minutes</q:description>
     <q:hearbeat-id>FiveMinute</q:hearbeat-id>
-    <q:source>http://noslogan.org/hub-queue//status/internal</q:source>
-    <q:type>http://noslogan.org/hub-queue//event/reset</q:type>
-</q:hearbeat-config>
+    <q:source>http://noslogan.org/hub-queue/status/internal</q:source>
+    <q:type>http://noslogan.org/hub-queue/event/reset</q:type>
+</q:heartbeat-config>
 ```
+
+
+
+
+### Internal Heartbeats
+
+The following events are generated for internal use using the hearbeat
+
+#### Reset
+
+Generates an event which, when handled, sets the status of all the events in the URI list to new.
+
+### Clear
+
+Generates an event which, when handled, deletes the event URIs in the event list. 
+
+### Fail
+
+Generates an event which, when handled, sets the status of the event URIs in the event list to failed.
+
+### Pending Timeout
+
+Generates an event which, when handled, identifies events that have not been handled but are marked as pending and adds them to a URI list for the reset event.
+
+### Execution Timeout
+
+Generates an event which, when handled, identifies events that are marked as executing but have run for longer than the configured maximum request timeout and 
+adds them to list for the Fail event.
+
+#### Identify Deletions
+
+Generates an event which, when handled, generates a list of event URIs which should be deleted.
+
+### Status
+
+Generates a summary of the state of the queue at the time it was run and stores it as a log entry.
+

@@ -1,0 +1,5 @@
+{
+    "privilege-name": "queue-log-privilege",
+    "action": "%%comQueuePrefix%%log/",
+    "kind": "uri"
+}

@@ -1,0 +1,5 @@
+{
+    "privilege-name": "queue-event-privilege",
+    "action": "%%comQueuePrefix%%",
+    "kind": "uri"
+}

@@ -1,0 +1,35 @@
+<q:deletion-config  xmlns:q="http://noslogan.org/hub-queue">
+    <!-- 
+        This heartbeat event generates an event handled by the first executor which
+        creates new events which list URIs of events to be deleted from the queue.
+    -->
+    <q:heartbeat-config>
+        <q:description>Generate a queue clear event every fifteen minutes</q:description>
+        <q:hearbeat-id>FifteenMinute</q:hearbeat-id>
+        <q:source>http://noslogan.org/hub-queue/status/internal</q:source>
+        <q:type>http://noslogan.org/hub-queue/event/identify-deletions</q:type>
+    </q:heartbeat-config>
+
+    <!--- 
+        This executor event creates new events which list the URIs of events to be 
+        deleted from the queue.
+    -->
+    <q:executor>
+        <q:source>http://noslogan.org/hub-queue/status/internal</q:source>
+        <q:type>http://noslogan.org/hub-queue/event/identify-deletions</q:type>
+        <q:module>/components/queue/handlers/identify-deletions.xqy</q:module>
+        <q:language>xquery</q:language>
+    </q:executor>
+
+    <!--
+        This executor receives the deletion events created above and deletes
+        documents from the queue.
+    -->
+    <q:executor>
+        <q:source>http://noslogan.org/hub-queue/status/internal</q:source>
+        <q:type>http://noslogan.org/hub-queue/event/clear</q:type>
+        <q:module>/components/queue/handlers/queue-removal.xqy</q:module>
+        <q:language>xquery</q:language>
+    </q:executor>
+    
+</q:deletion-config>

@@ -6,7 +6,7 @@ import module namespace qc = "http://noslogan.org/components/hub-queue/queue-con
 import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "queue-event.xqy";
 
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 (:~ Code that deals with queue logging :)
 

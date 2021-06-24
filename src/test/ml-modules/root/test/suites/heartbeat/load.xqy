@@ -3,7 +3,7 @@ xquery version "1.0-ml";
 import module namespace test = "http://marklogic.com/test" at "/test/utils/test-helper.xqy";
 import module namespace qt = "http://noslogan.org/components/hub-queue/queue-heartbeat" at "/components/queue/queue-heartbeat.xqy";
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 declare option xdmp:mapping "false";
 

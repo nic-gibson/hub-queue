@@ -2,7 +2,7 @@ xquery version "1.0-ml";
 
 import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "/components/queue/queue-log.xqy";
 
-declare namespace queue = "http://noslogan.org/hub-queue/";
+declare namespace queue = "http://noslogan.org/hub-queue";
 
 declare variable $q:source as xs:string external;
 declare variable $q:type as xs:string external;
