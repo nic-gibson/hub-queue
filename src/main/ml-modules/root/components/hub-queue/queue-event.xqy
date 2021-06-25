@@ -26,7 +26,7 @@ declare option xdmp:mapping "false";
 :)
 declare function qe:create-batch($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*) as element(queue:event) {
 
-    for $n in 1 to xs:integer(fn:ceil(fn:count($uris) div qc:max-uris()))
+    for $n in 1 to xs:integer(math:ceil(fn:count($uris) div qc:max-uris()))
         let $start := ($n - 1) * qc:max-uris() + 1
         return qe:create($type, $source, $payload, 
             fn:subsequence($uris, 

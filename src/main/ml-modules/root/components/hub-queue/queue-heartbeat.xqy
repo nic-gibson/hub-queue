@@ -45,14 +45,14 @@ declare function qt:find-heartbeat-configs($heartbeat-type as xs:string) as elem
                 cts:element-query(xs:QName('queue:heartbeat-config'), cts:true-query()),
                 cts:element-value-query(xs:QName('queue:heartbeat-id'), $heartbeat-type)
             )))
-    }, map:new() => map:with('database', xdmp:database(xdmp:modules-database())))
+    }, map:new() => map:with('database', xdmp:modules-database()))
 };
 
 (:~ 
  : Given a sequence of heartbeat configurations generate an event in the
  : queue for each one. 
 :)
-declare function qt:create-heartbeat-events($configs as element(queue:heartbeat-config)) as xs:string* {
+declare function qt:create-heartbeat-events($configs as element(queue:heartbeat-config)*) as xs:string* {
     for $config in $configs 
         return if ($config/queue:type) 
             then qh:write(qe:create(

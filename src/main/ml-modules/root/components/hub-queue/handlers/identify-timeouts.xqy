@@ -1,8 +1,8 @@
 xquery version "1.0-ml";
 
-import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "/components/queue/queue-log.xqy";
-import module namespace ql = "http://noslogan.org/components/hub-queue/queue-event" at "/components/queue/queue-event.xqy";
-import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "/components/queue/queue-handler.xqy";
+import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "/components/hub-queue/queue-log.xqy";
+import module namespace ql = "http://noslogan.org/components/hub-queue/queue-event" at "/components/hub-queue/queue-event.xqy";
+import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "/components/hub-queue/queue-handler.xqy";
 
 declare namespace queue = "http://noslogan.org/hub-queue";
 

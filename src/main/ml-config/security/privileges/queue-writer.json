@@ -1,6 +1,5 @@
 {
-  "privilege-name" : "queue-writer",
-  "action" : "http://noslogan.org/hub-queue/queue-writer",
-  "kind" : "execute",
-  "role" : [ "hub-queue-writer" ]
+  "privilege-name" : "hub-queue-writer",
+  "action" : "%%queueNSPrefix%%/hub-queue-writer",
+  "kind" : "execute"
 }

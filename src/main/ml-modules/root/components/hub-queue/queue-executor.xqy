@@ -42,14 +42,14 @@ declare function qx:handle-event($uri as xs:string) as xs:string? {
                         $status
                     )
                 else (
-                    ql:audit-events("Event executor does not exist", $uri, $event, qc:status-failed(), ()),
+                    ql:audit-events("Event executor does not exist", $uri, $event, qc:status-failed(), (), ()),
                     ql:warn-events("Event executor does not exist", $event),
                     ql:set-status($uri, qc:status-failed()),
                     qc:status-failed()
                 )
 
             else (
-                ql:audit-events("Event URI does not exist", $uri, (), (), ()),
+                ql:audit-events("Event URI does not exist", $uri, (), (), (), ()),
                 ql:warn-uris("Event URI does not exist", $uri)
             )
 

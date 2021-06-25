@@ -13,9 +13,9 @@
       "kind": "execute"
     },
     {
-      "privilege-name": "queue-writer",
-      "action": "http://noslogan.org/hub-queue/queue-writer",
-      "kind": "execute"
+      "privilege-name" : "hub-queue-writer",
+      "action" : "%%queueNSPrefix%%/hub-queue-writer",
+      "kind" : "execute"
     },
     {
       "privilege-name": "xdmp:invoke-in",
@@ -24,13 +24,13 @@
     },
     {
       "privilege-name": "queue-event-privilege",
-      "action": "%%comQueuePrefix%%",
+      "action": "%%queuePrefix%%",
       "kind": "uri"
-    },
-    {
-      "privilege-name": "queue-log-privilege",
-      "action": "%%comQueuePrefix%%log/",
-      "kind": "uri"
-    }
+  },
+  {
+    "privilege-name": "queue-log-privilege",
+    "action": "%%queuePrefix%%log/",
+    "kind": "uri"
+}
   ]
 }

@@ -1,6 +1,6 @@
 xquery version "1.0-ml";
 
-import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "/components/queue/queue-log.xqy";
+import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "/components/hub-queue/queue-log.xqy";
 
 declare namespace queue = "http://noslogan.org/hub-queue";
 

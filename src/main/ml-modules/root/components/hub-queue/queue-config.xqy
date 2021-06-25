@@ -29,28 +29,20 @@ declare function qc:uri-prefix() as xs:string {
 (:~ 
  : Get the name of the collection to use for queued documents.  This collection name is also 
  : used as the base of the state collection names
- : Gives the value of the `queueCollection` gradle property if set and the default if not.
+ : Gives the value of the `queueNSPrefix` gradle property if set and the default if not.
  : @return the name of the main queue collection
  :)
 declare function qc:collection() as xs:string {
-    qc:token("%%queueCollection%%", "http://noslogan.org/hub-queue/")
+    qc:token("%%queueNSPrefix%%", "http://noslogan.org/hub-queue")
 };
 
 (:~ 
- : Get the name of the role used for queue update permissions.
+ : Get the name of the role used for event documents
  : If no role name is provided via gradle, "rest-writer" is used
  : @return the role name
  :)
-declare function qc:writer-role() as xs:string {
+declare function qc:role() as xs:string {
     qc:token("%%queueWriterRole%%", "rest-writer")
-};
-
-(:~ Get the name of the role used for queue read permissions.
- : If no role name is provided via gradle, "rest-reader" is used
- : @return the role name
- :)
-declare function qc:reader-role() as xs:string {
-    qc:token(("%%queueReaderRole%%", "%%mlFlowOperatorRole%%"), "rest-reader", fn:true())
 };
 
 (:~ Get any additional permissions to be assigned 
@@ -81,8 +73,8 @@ declare function qc:additional-permissions() as map:map* {
 :)
 declare function qc:permissions() as map:map* {
     (
-        xdmp:permission(qc:writer-role(), 'update', 'object'),
-        xdmp:permission(qc:reader-role(), 'read', 'object'),
+        xdmp:permission(qc:role(), 'update', 'object'),
+        xdmp:permission(qc:role(), 'read', 'object'),
         qc:additional-permissions()
     )
 };
@@ -265,6 +257,13 @@ declare function qc:event-update-status() {
     qc:collection-prefix() || '/event/update-status'
 };
 
+(:~
+ : Return the name of the execute privilege required to interact with the
+ : the stored events
+:)
+declare function qc:queue-privilege() {
+    "http://noslogan.org/hub-queue/queue/queue-writer"
+};
 
 (:~
  : Get the prefix for status collections. Defined as the queue colleciton

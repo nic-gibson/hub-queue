@@ -36,7 +36,7 @@ declare option xdmp:mapping "false";
 
     if (xdmp:database() = xdmp:database(qc:database())) 
         then
-            let $_ := xdmp:security-assert(qc:queue-privilege, 'execute')
+            let $_ := xdmp:security-assert(qc:queue-privilege(), 'execute')
             let $uri := qh:uri(qe:id($event))
             return 
             (
@@ -205,7 +205,7 @@ declare function qh:pending-event-uris-for-timeout() as xs:string* {
  : the maximum execution time for a request
  : @return the URIs of the timed out documents
 :)
-declare function qh:pending-event-uris-for-timeout() as xs:string* {
+declare function qh:execution-event-uris-for-timeout() as xs:string* {
     qh:timeouts-by-status(qc:status-executing(), qc:execution-timeout())
 };
 
@@ -228,7 +228,7 @@ declare function qh:delete-events($uris as xs:string*) as empty-sequence() {
 
     let $_ := $uris ! xdmp:document-delete(.)
 
-    return ql:audit-events("Events deleted", $uris, $events, $statuses, $timestamps)
+    return ql:audit-events("Events deleted", $uris, $events, $statuses, $timestamps, ())
 
   };
 
@@ -243,8 +243,8 @@ declare function qh:delete-events($uris as xs:string*) as empty-sequence() {
 declare function qh:get-event($uri as xs:string, $status as xs:string?) as element(queue:event)? {
     (   
         xdmp:security-assert(qc:queue-privilege, 'execute'),
-        if (fn:exists($tatus)) then qh:set-status($uri, $status) else (),
-        xdmp:invoke-function( function() { fn:doc($uri) }, map:new() => map:with('database', qc:database())
+        if (fn:exists($status)) then qh:set-status($uri, $status) else (),
+        xdmp:invoke-function( function() { fn:doc($uri) }, map:new() => map:with('database', qc:database()))
     )
 };
 
@@ -264,7 +264,7 @@ declare function qh:timeouts-by-status($status as xs:string, $duration as xs:day
     return (op:from-view('queue', 'queue', ())
         => op:order-by('updated')
         => op:where(op:and(
-            op:eq(op:col('status'), $statu),
+            op:eq(op:col('status'), $status),
             op:lt(op:col('updated'), $max-age)))
         => op:select('uri')
         => op:result('object')) ! map:get(., 'queue.queue.uri')

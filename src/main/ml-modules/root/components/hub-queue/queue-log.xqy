@@ -56,7 +56,7 @@ declare function ql:audit-events($message as xs:string, $uris as xs:string*, $ev
                 => map:with('permissions', qc:permissions())
         )
         else xdmp:invoke-function( 
-            function() { ql:audit-events($message, $uris, $events, $statuses, $timestamps) }, 
+            function() { ql:audit-events($message, $uris, $events, $statuses, $timestamps, ()) }, 
                 map:new() => map:with("database", qc:log-database()))
 };
 
