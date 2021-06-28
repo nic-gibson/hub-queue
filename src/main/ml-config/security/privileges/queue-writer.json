@@ -1,5 +1,0 @@
-{
-  "privilege-name" : "hub-queue-writer",
-  "action" : "%%queueNSPrefix%%/hub-queue-writer",
-  "kind" : "execute"
-}

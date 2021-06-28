@@ -57,7 +57,7 @@ declare function qt:create-heartbeat-events($configs as element(queue:heartbeat-
         return if ($config/queue:type) 
             then qh:write(qe:create(
                 $config/queue:type,
-                ($config/queue:source, 'heartbeat')[1],
+                ($config/queue:source, qc:heartbeat-source())[1],
                 $config/queue:payload/node(), 
                 ())
             )

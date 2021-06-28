@@ -2,10 +2,9 @@ xquery version "1.0-ml";
 
 module namespace qc = "http://noslogan.org/components/hub-queue/queue-config";
 
-import module namespace admin = "http://marklogic.com/xdmp/admin" at "/MarkLogic/admin.xqy";
-
-
 declare namespace queue = "http://noslogan.org/hub-queue";
+
+declare private variable $config as map:map := qc:load-config();
 
 declare option xdmp:mapping "false";
 
@@ -14,7 +13,7 @@ declare option xdmp:mapping "false";
  : property if set and the default ("hub.queue") if not set.
 :)
 declare function qc:trace() as xs:string {
-    qc:token("%%queueTrace%%", "hub.queue")
+    map:get($config, 'trace')
 };
 
 (:~
@@ -22,59 +21,43 @@ declare function qc:trace() as xs:string {
  : `queuePrefix` property is used. If not the default is returned ("/noslogan.org/hub-queue/queue/")
  :)
 declare function qc:uri-prefix() as xs:string {
-    let $prefix := qc:token("%%queuePrefix%%", "/noslogan.org/hub-queue/queue")
-    return if (fn:ends-with($prefix, '/')) then $prefix else $prefix || '/'
+    if (fn:ends-with(map:get($config, 'uri-prefix'), '/')) then map:get($config, 'uri-prefix') else map:get($config, 'uri-prefix') || '/'
 };
 
 (:~ 
- : Get the name of the collection to use for queued documents.  This collection name is also 
+ : Get the base name of the collection to use for queued documents.  This collection name is also 
  : used as the base of the state collection names
- : Gives the value of the `queueNSPrefix` gradle property if set and the default if not.
+ : Gives the value of the `hubQueueCollectionBase` gradle property if set and the default if not.
  : @return the name of the main queue collection
  :)
 declare function qc:collection() as xs:string {
-    qc:token("%%queueNSPrefix%%", "http://noslogan.org/hub-queue")
-};
-
-(:~ 
- : Get the name of the role used for event documents
- : If no role name is provided via gradle, "rest-writer" is used
- : @return the role name
- :)
-declare function qc:role() as xs:string {
-    qc:token("%%queueWriterRole%%", "rest-writer")
+    map:get($config, 'collection-base')
 };
 
 (:~ Get any additional permissions to be assigned 
  : @return a sequence of sec:permission objects
 :)
 declare function qc:additional-permissions() as map:map* {
-    let $permission-string := qc:token("%%queuePermissions%%", '')
-    let $tokens := if ($permission-string = '') then () else fn:tokenize($permission-string, '\s*,\s*')
-
-    (: if it's not divisible by two something is wrong :)
-    return if (fn:count($tokens) mod 2 = 1) 
-        then fn:error(
-                xs:QName("queue:BADPERMISSIONS"), 
-                "The permissions string must consist of paired values.",
-                map:entry('permissions', $permission-string))
-        else 
-            let $roles := $tokens[position() mod 2 = 1]
-            let $capabilities := $tokens[position() mod 2 = 0]
-            return for $role at $n in $roles 
-                (: this will raise an exception if either capability or role is wrong :)
-                return xdmp:permission($role, $capabilities[$n], 'object')
+    qc:parse-permissions(map:get($config, 'additional-permissions'))
 };
 
-
 (:~ 
- : Get all the permissions to be assigned to a new queue document
- : @return a sequence of sec:permission objects 
+ : Get all the permissions to be assigned to a new queue document : @return a sequence of permission objects 
 :)
 declare function qc:permissions() as map:map* {
     (
-        xdmp:permission(qc:role(), 'update', 'object'),
-        xdmp:permission(qc:role(), 'read', 'object'),
+        qc:parse-permissions(map:get($config, 'queue-permissions')),
+        qc:additional-permissions()
+    )
+};
+
+(:~ 
+ : Get all the permissions to be assigned to a new log document
+ : @return a sequence of permission objects 
+:)
+declare function qc:log-permissions() as map:map* {
+    (
+        qc:parse-permissions(map:get($config, 'log-permissions')),
         qc:additional-permissions()
     )
 };
@@ -85,85 +68,77 @@ declare function qc:permissions() as map:map* {
  : external event sources might use it too
 :)
 declare function qc:max-uris() as xs:integer {
-    qc:token("%%queueMaximumURIs%%", 500)
+    xs:integer(map:get($config, 'max-uris'))
 };
  
+(:~
+ : Get the maximum number of event URIs to be returned when events are requested
+ : over the REST interface
+:)
+declare function qc:max-events() as xs:integer {
+    xs:integer(map:get($config, 'max-events'))
+};
+
 (:~ 
- : Use the standard gradle database names to try and work out the name of the database to write the queue to.
- : First, try the queue specific property. Then, if the DHF staging DB is set, use that. If not, 
- : try the content database. If all else fails use the current database. 
- : NOTE - this is slightly convoluted because mlAppName is very likely to exist but is very likely not to be
- : a useful database name.
- : @return the name of the database to write the queue to.
+ : Get the queue database. Unless overridden this is the hub staging database
  :)
  declare function qc:database() as xs:string {
-    let $name := qc:token(("%%queueDatabase%%", "%%mlStagingDbName%%", "%%mlContentDatabaseName%%", "%%mlAppName%%"), xdmp:database-name(xdmp:database()))
-    return if (qc:database-exists($name)) 
-        then $name 
-        else if (qc:database-exists($name || "-content"))
-            then $name || "-content"
-            else xdmp:database-name(xdmp:database())
+     map:get($config, 'database')
  };
 
 (:~ 
  : Get the duration after which a pending event is considered to have timed out and 
- : should be returned to new status. This can be set using the `queuePendingTimeout` gradle
+ : should be returned to new status. This can be set using the `hubQueuePendingTimeout` gradle
  : property. The value must be a valid day/time duration. If not set a duration corresponding to 
  : 30 minutes is returned
 :)
 declare function qc:pending-timeout() as xs:dayTimeDuration {
-    xs:dayTimeDuration(qc:token("%%queuePendingTimeout%%", "PT30M"))
+    xs:dayTimeDuration(map:get($config, 'pending-timeout'))
 };
 
 (:~ 
  : Get the duration after which a new event is considered to have timed out and 
- : should be set to failed status. This can be set using the `queueNewTimeout` gradle
+ : should be set to failed status. This can be set using the `hubQueueNewTimeout` gradle
  : property. The value must be a valid day/time duration. If not set a duration corresponding to 
  : 60 minutes is returned
 :)
 declare function qc:new-timeout() as xs:dayTimeDuration {
-    xs:dayTimeDuration(qc:token("%%queueNewTimeout%%", "PT60M"))
+    xs:dayTimeDuration(map:get($config, 'new-timeout'))
 };
 
 (:~ 
- : Query the app server configuration for the maximum requestion execution time for this
- : app server. This is used to determine if an event marked as executing has been timed out.
+ : Get the duration after which an executing event is considered to have timed out and 
+ : should be set to failed status. This can be set using the `hubQueueExecutionTimeout` gradle
+ : property. The value must be a valid day/time duration. If not set a duration corresponding to 
+ : 60 minutes is returned
 :)
 declare function qc:execution-timeout() as xs:dayTimeDuration {
-
-    xs:dayTimeDuration('PT' || xs:string(admin:appserver-get-max-time-limit(admin:get-configuration(), xdmp:server())) || "S")
-
-
+    xs:dayTimeDuration(map:get($config, 'execution-timeout'))
 };
 
 (:~
  : Return true if detailed logging is enabled 
 :)
 declare function qc:detailed-log() as xs:boolean {
-    fn:lower-case(qc:token("%%queueDetailedLog%%", 'false')) = 'true'
+   if (map:get($config, 'detailed-log') castable as xs:boolean) 
+    then xs:boolean(map:get($config, 'detailed-log'))
+    else fn:false()
 };
 
 (:~
- : Return the database that queue logs should be written to. If the DHF jobs
- : database is defined, return that. Otherwise, return the same database the queue
- : is written to.
- :)
+ : Return the database that queue logs should be written to. Uses the
+ : DHF log db unless overriddent
+:)
  declare function qc:log-database() as xs:string {
-    let $name := qc:token(("%%mlJobDbName%%", "%%queueDatabase%%", "%%mlStagingDbName%%", "%%mlContentDatabaseName%%", "%%mlAppName%%"), xdmp:database-name(xdmp:database()))
-    return if (qc:database-exists($name)) 
-        then $name 
-        else if (qc:database-exists($name || "-content"))
-            then $name || "-content"
-            else xdmp:database-name(xdmp:database())
+     map:get($config, 'log-database')
  };
-
 (:~ 
  : Return log URI prefix to use.
  : If not defined in queueLogPrefix then the normal prefix with 'log' appended
  : is used
  :)
  declare function qc:log-prefix() as xs:string {
-     qc:token('%%queueLogPrefix%%', qc:uri-prefix() || 'log/' )
+     if (fn:ends-with(map:get($config, 'log-prefix'), '/')) then map:get($config, 'log-prefix') else map:get($config, 'log-prefix') || '/'
  };
 
 (:~ 
@@ -172,21 +147,21 @@ declare function qc:detailed-log() as xs:boolean {
  : is used
  :)
  declare function qc:log-collection() as xs:string {
-     qc:token('%%queueLogCollection%%', qc:collection() || '/log/' )
+     map:get($config, 'log-collection')
  };
 
 (:~ 
  : REturn the name of the metadata item used to store status
 :)
 declare function qc:status-metadata-name() as xs:string {
-    qc:token("%%queueStatusMetadata", 'queue-status')
+    map:get($config, 'status-meta')
 };
 
 (:~
  : Return the name of the metadata item used to store the timestamp
 :)
 declare function qc:timestamp-metadata-name() as xs:string {
-    qc:token("%%queueTimestampMetadata", 'queue-timestamp')
+    map:get($config, 'timestamp-meta')
 };
 
 
@@ -195,38 +170,38 @@ declare function qc:timestamp-metadata-name() as xs:string {
  : when an event is inserted into the queue. Recovery may lead to a pending
  : entry being returned to new status
  :)
-declare function qc:status-new() {
-    qc:collection-prefix() || 'new'
+declare function qc:new-status() {
+    qc:collection-prefix() || '/status/new'
 };
 
 (:~
  : Return the collection URI for pending event. 
  :)
- declare function qc:status-pending() {
-     qc:collection-prefix() || 'pending'
+ declare function qc:pending-status() {
+     qc:collection-prefix() || '/status/pending'
  };
 
  
 (:~
  : Return the collection URI for execution event. 
  :)
- declare function qc:status-executing() {
-     qc:collection-prefix() || 'executing'
+ declare function qc:executing-status() {
+     qc:collection-prefix() || '/status/executing'
  };
 
 
 (:~
  : Return the collection URI for failed event. 
  :)
- declare function qc:status-failed() {
-     qc:collection-prefix() || 'failed'
+ declare function qc:failed-status() {
+     qc:collection-prefix() || '/status/failed'
  };
 
 (:~
  : Return the collection URI for finished events. 
  :)
- declare function qc:status-finished() {
-     qc:collection-prefix() || 'finished'
+ declare function qc:finished-status() {
+     qc:collection-prefix() || '/status/finished'
 };
 
 (:~ 
@@ -235,6 +210,14 @@ declare function qc:status-new() {
 declare function qc:internal-source() {
     qc:collection-prefix() || "/source/internal"
 };
+
+(:~ 
+ : Return the source type for heartbeat events
+:)
+declare function qc:heartbeat-source() {
+    qc:collection-prefix() || "/source/heartbeat"
+};
+
 
 (:~
  : Return the event type for the queue reset internal event type
@@ -258,15 +241,7 @@ declare function qc:event-update-status() {
 };
 
 (:~
- : Return the name of the execute privilege required to interact with the
- : the stored events
-:)
-declare function qc:queue-privilege() {
-    "http://noslogan.org/hub-queue/queue/queue-writer"
-};
-
-(:~
- : Get the prefix for status collections. Defined as the queue colleciton
+ : Get the prefix for status/source/event collections. Defined as the queue colleciton
  : with trailing / if not already present
  :)
  declare private function qc:collection-prefix() as xs:string {
@@ -274,37 +249,46 @@ declare function qc:queue-privilege() {
      return if (fn:ends-with($collection, '/')) then $collection else $collection || '/'
  };
 
+
+(:~
+ : Load the configuration file, setting the configuration map by taking the elements from the
+ : default configuration and then picking the first defined value from custom config or the default
+ : and storing it in map keyed on the local name of each element
+ : @return a map of the configuration for the queue
+:)
+declare private function qc:load-config() as map:map {
+    let $config := xdmp:invoke-function(
+        function() { cts:search(fn:doc(), cts:element-query(xs:QName("qc:queue-config"), cts:true-query()))[1]/qc:queue-config },
+        map:new() => map:with('database', xdmp:modules-database()))
+
+    (: Use the defaults to drive the process because some defaults are not overwritten by custom configuration :)
+    return map:map(
+        for $item in $config/qc:default-config/*
+            let $potential-default := $config/qc:custom-config/*[name=fn:name($item)]/data()
+            return map:entry(fn:local-name($item), (
+                if (fn:starts-with($potential-default, "%%")) then () else $potential-default,
+                $item/data())[1]))
+};
+
+
 (:~ 
- : Check if a database exists 
+ : Convert a sequence of role/capability pairs into permissions 
+ : @param $permissions-string the strings to be parsed
+ : @return a sequence of permission maps
  :)
-declare private function qc:database-exists($dbname as xs:string) as xs:boolean {
-    try {
-        fn:exists(xdmp:database($dbname))
-    } catch ($exception) {
-        fn:false()
-    }
-};
+ declare function qc:parse-permissions($permission-string as xs:string?) as map:map* {
+    let $tokens := if ($permission-string = '') then () else fn:tokenize($permission-string, '\s*,\s*')
 
-
-(:~
- : Given a value, check if it's an unset gradle token (starts with '%%'), returning that 
- : value if it isn't and the supplied default if it is
- : @param $test - strings that may or may not have an unset token in it
- : @param $default - string to return if $test is an unset token
- : @param $allow-empty - set to true if empty tokens are valid
- : @return the first set token or the default
-:)
-declare private function qc:token($test as xs:string*, $default as xs:string, $allow-empty as xs:boolean) as xs:string {
-    ($test[fn:not(fn:starts-with(., '%%'))][$allow-empty or fn:not(. = '')], $default)[1]
-};
-
-(:~
- : Given a value, check if it's an unset gradle token (starts with '%%'), returning that 
- : value if it isn't and the supplied default if it is. Empty tokens are also
- : ignored.
- : @param $test - strings that may or may not have an unset token in it
- : @param $default - string to return if $test is an unset token : @return the first set token or the default
-:)
-declare private function qc:token($test as xs:string*, $default as xs:string) as xs:string {
-    qc:token($test, $default, fn:false())
+    (: if it's not divisible by two something is wrong :)
+    return if (fn:count($tokens) mod 2 = 1) 
+        then fn:error(
+                xs:QName("queue:BADPERMISSIONS"), 
+                "The permissions string must consist of paired values.",
+                map:entry('permissions', $permission-string))
+        else 
+            let $roles := $tokens[position() mod 2 = 1]
+            let $capabilities := $tokens[position() mod 2 = 0]
+            return for $role at $n in $roles 
+                (: this will raise an exception if either capability or role is wrong :)
+                return xdmp:permission($role, $capabilities[$n], 'object')
 };

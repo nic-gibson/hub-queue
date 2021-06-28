@@ -47,7 +47,7 @@ declare option xdmp:mapping "false";
                         => map:with("collections", qc:collection())
                         => map:with("permissions", qc:permissions())
                         => map:with('metadata', map:new() 
-                            => map:with(qc:status-metadata-name(), qc:status-new())
+                            => map:with(qc:status-metadata-name(), qc:new-status())
                             => map:with(qc:timestamp-metadata-name(), fn:current-dateTime())
                         )
                 ), 
@@ -132,7 +132,7 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) as empt
  declare function qh:get-event-documents($count as xs:positiveInteger, $current-status as xs:string, $new-status as xs:string?) as element(queue:event)* {
 
     (
-        xdmp:security-assert(qc:queue-privilege, 'execute'),
+        xdmp:security-assert(qc:queue-privilege(), 'execute'),
         xdmp:invoke-function( function() {
 
             let $results := (op:from-view('queue', 'queue', ()) 
@@ -167,8 +167,8 @@ declare function qh:event-uris-for-deletion() as xs:string* {
     return (op:from-view('queue', 'queue', ()) 
         => op:order-by('updated')
         => op:where(op:or(
-            op:eq(op:col('status'), qc:status-failed()),
-            op:eq(op:col('status'), qc:status-finished())))
+            op:eq(op:col('status'), qc:failed-status()),
+            op:eq(op:col('status'), qc:finished-status())))
         => op:select('uri')
         => op:result('object')) ! map:get(., 'queue.queue.uri')
 };
@@ -182,7 +182,7 @@ declare function qh:event-uris-for-deletion() as xs:string* {
  : @return the URIs of the timed out documents
 :)
 declare function qh:new-event-uris-for-timeout() as xs:string* {
-    qh:timeouts-by-status(qc:status-new(), qc:new-timeout())
+    qh:timeouts-by-status(qc:new-status(), qc:new-timeout())
 };
 
 
@@ -194,7 +194,7 @@ declare function qh:new-event-uris-for-timeout() as xs:string* {
  : @return the URIs of the timed out documents
 :)
 declare function qh:pending-event-uris-for-timeout() as xs:string* {
-    qh:timeouts-by-status(qc:status-pending(), qc:pending-timeout())
+    qh:timeouts-by-status(qc:pending-status(), qc:pending-timeout())
 };
 
 
@@ -206,7 +206,7 @@ declare function qh:pending-event-uris-for-timeout() as xs:string* {
  : @return the URIs of the timed out documents
 :)
 declare function qh:execution-event-uris-for-timeout() as xs:string* {
-    qh:timeouts-by-status(qc:status-executing(), qc:execution-timeout())
+    qh:timeouts-by-status(qc:executing-status(), qc:execution-timeout())
 };
 
 
@@ -269,3 +269,10 @@ declare function qh:timeouts-by-status($status as xs:string, $duration as xs:day
         => op:select('uri')
         => op:result('object')) ! map:get(., 'queue.queue.uri')
 };
+
+(:~ Completely clear the queue :)
+declare function qh:clear-queue() as empty-sequence() {
+    xdmp:collection-delete(qc:collection())
+};
+
+(:~ Check if a given URI is in any queue document :)

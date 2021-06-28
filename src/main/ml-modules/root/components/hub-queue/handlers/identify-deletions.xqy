@@ -22,4 +22,4 @@ let $uris := qh:event-uris-for-deletion()
 let $event-count := xs:integer(fn:ceil(fn:count($uris) div qc:max-uris()))
 let $new-uris := qe:create-batch(qc:event-clear(), qc:internal-source(), (), $uris) ! qh:write(.)
 
-return qc:status-finished()
+return qc:finished-status()

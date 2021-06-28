@@ -1,0 +1,67 @@
+<queue-config  xmlns="http://noslogan.org/components/hub-queue/queue-config">
+
+    <!-- custom config settings are used if and only if they don't start with %% 
+         (that is, they have been set in a gradle properties file) 
+    -->
+
+    <custom-config>
+
+        <trace>%%hubQueueTrace%%</trace>
+
+        <database>%%hubQueueQueueDatabase%%</database>
+        <log-database>%%hubQueueLogDatabase%%</log-database>
+
+        <timeouts>
+            <execute>%%hubQueueExecuteTimeout%%</execute>
+            <new>%%hubQueueNewTimeout%%</new>
+            <pending>%%hubQueuePendingTimeout%%</pending>
+        </timeouts>
+
+        <uri-prefix>%%hubQueueQueuePrefix%%</uri-prefix>
+        <log-uri-prefix>%%hubQueueLogPrefix%%</log-uri-prefix>
+        <collection-base>%%hubQueueCollectionBase%%</collection-base>
+
+        <additional-permissions>%%hubQueueAdditionalPermissions%%</additional-permissions>
+
+        <max-uris>%%hubMaxURIs%%</max-uris>
+        <max-events>%%hubMaxEvents%%</max-events>
+
+        <detailed-log>%%hubQueueDetailedLog%%</detailed-log>
+        
+        <status-meta>%%hubQueueStatusMetadata%%</status-meta>
+        <timestamp-meta>%%hubQueueTimestampMetadata%%</timestamp-meta>
+
+    </custom-config>
+
+    <default-config>
+      
+        <database>%%mlStagingDbName%%</database>
+        <log-database>%%mlJobDbName%%</log-database>
+
+        <trace>hub.queue</trace>
+
+        <execute-timeout>PT1H</execute-timeout>
+        <new-timeout>PT1H</new-timeout>
+        <pending-timeout>PT30M</pending-timeout>
+
+        <uri-prefix>/noslogan.org/hub-queue/queue</uri-prefix>
+        <log-uri-prefix>/noslogan.org/hub-queue/queue/log</log-uri-prefix>
+
+        <collection-base>http://noslogan.org/hub-queue</collection-base>
+        <log-collection>http://noslogan.org/hub-queue/log</log-collection>
+
+        <log-permissions>data-hub-job-internal,update,data-hub-operator,read</log-permissions>
+        <queue-permissions>data-hub-operator,read,data-hub-operator,update</queue-permissions>
+        <additional-permissions/>
+
+        <max-uris>500</max-uris>
+        <max-events>10</max-events>
+
+        <detailed-log>false</detailed-log>
+
+        <status-meta>hub-queue-status</status-meta>
+        <timestamp-meta>hub-queue-timestamp</timestamp-meta>
+
+    </default-config>
+
+</queue-config>

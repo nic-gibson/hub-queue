@@ -1,21 +1,34 @@
-
-buildscript {
-  repositories {
-    jcenter()
-    mavenLocal()
-  }
-  dependencies {
-    classpath "com.marklogic:marklogic-unit-test-client:1.0.0"
-    classpath "com.marklogic:ml-gradle:4.1.1"
-  }
+plugins {
+	id "maven-publish"
 }
 
-plugins { id "com.marklogic.ml-gradle" version "4.1.1" }
+group = "org.noslogan"
+version = "0.1.1"
 
-repositories {
-  jcenter()
+configurations {
+	bundle
 }
 
-dependencies {
-  mlBundle "com.marklogic:marklogic-unit-test-modules:1.0.0"
+task bundleJar(type: Jar) {
+	from("src/main/ml-config") {
+		into("hub-queue/ml-config")
+	}
+	from("src/main/ml-modules") {
+		into("hub-queue/ml-modules")
+  }
+	destinationDirectory = file("build/libs")
+	archiveBaseName = "hub-queue"
+}
+
+artifacts {
+	bundle bundleJar
+}
+
+publishing {
+	publications {
+		mainBundle(MavenPublication) {
+			artifactId "hub-queue"
+			artifact bundleJar
+		}
+	}
 }

@@ -26,7 +26,8 @@ declare option xdmp:mapping "false";
 :)
 declare function qx:handle-event($uri as xs:string) as xs:string? {
 
-    let $event := qh:get-event($uri, qc:status:executing())
+    let $event := qh:get-event($uri, qc:executing-status())
+    
     return if (fn:exists($event))
         then
             let $executor := qx:find-executor($event)
@@ -34,7 +35,7 @@ declare function qx:handle-event($uri as xs:string) as xs:string? {
                 then
                     let $status := (
                         qx:execute($executor, qe:source($event), qe:type($event), qe:payload($event), qe:uris($event)),
-                        qc:status-done())[1]
+                        qc:finished-status())[1]
                     return (
                         qh:set-status($uri, $status),
                         ql:trace-event("Event executed", $event),
@@ -42,10 +43,10 @@ declare function qx:handle-event($uri as xs:string) as xs:string? {
                         $status
                     )
                 else (
-                    ql:audit-events("Event executor does not exist", $uri, $event, qc:status-failed(), (), ()),
+                    ql:audit-events("Event executor does not exist", $uri, $event, qc:failed-status(), (), ()),
                     ql:warn-events("Event executor does not exist", $event),
-                    ql:set-status($uri, qc:status-failed()),
-                    qc:status-failed()
+                    ql:set-status($uri, qc:failed-status()),
+                    qc:failed-status()
                 )
 
             else (
@@ -71,7 +72,7 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
                     cts:element-value-query('queue:type', $event/queue:type),
                     cts:element-value-query('queue:source', $event/queue:source)
                 ))))//queue:executor)[1]
-    }, map:new() => map:with('database', xdmp:modules-database())
+    }, map:new() => map:with('database', xdmp:modules-database()))
 };
 
 
@@ -95,7 +96,7 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
     let $options := map:new() 
         => map:with('isolation', 'different-transaction')
         => map:with('update', 'auto')
-        => map:with('commit', 'auto')) 
+        => map:with('commit', 'auto') 
 
     try {
         return if ($is-xquery) 
@@ -105,7 +106,7 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
         (
             ql:error-uris("Error executing event", $e, $uris, $source, $type),
             ql:audit-events("Error executing event", $uris, (), (), (), $e),
-            return qc:status-failed()            
+            return qc:failed-status()            
         )
     }
  };

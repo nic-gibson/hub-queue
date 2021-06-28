@@ -14,6 +14,10 @@ declare variable $q:uris as xs:string* external;
 (:~ 
  : This is a test event handler. It deals with events of the following type
  :      * http://noslogan.org/hub-queue//event/ping
- : This simply writes a message to the error log and returns the finished status. 
+ : This writes a message to the error log and returns the finished status
+ : and updates the collections on each of the URIs to add "PINGED" to them
  :)
-ql:log-uris("PING EVENT", $uris, $source, $type)
+(
+    ql:log-uris("PING EVENT", $uris, $source, $type),
+    $uris ! xdmp:document-add-properties(., 'PINGED')
+)

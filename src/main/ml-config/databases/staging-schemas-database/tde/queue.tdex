@@ -5,7 +5,7 @@
   <path-namespaces>
   <path-namespace>
     <prefix>queue</prefix>
-    <namespace-uri>http://noslogan.org/hub-queue/</namespace-uri>
+    <namespace-uri>http://noslogan.org/hub-queue</namespace-uri>
   </path-namespace>
 </path-namespaces>
   <rows>

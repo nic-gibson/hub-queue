@@ -28,7 +28,7 @@ if ($q:type = qc:event-clear())
 
 (: reset - sets the status back to new :)
 else if ($q:type = qc:event-reset())
-    then qh:set-status($queue:uris, qc:status-new())
+    then qh:set-status($queue:uris, qc:new-status())
 
 (: We really shouldn't be here! :)
 else ql:warn-uris("QUEUE RECOVERY with wrong type", $uris, $source, $type)

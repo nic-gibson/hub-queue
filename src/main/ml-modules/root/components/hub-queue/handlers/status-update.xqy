@@ -22,6 +22,6 @@ declare variable $queue:uris as xs:string* external;
 
 (
     qh:set-status($queue:uris, $queue:payload),
-    qc:status-finished()
+    qc:finished-status()
 )
     

@@ -21,10 +21,10 @@ declare variable $q:uris as xs:string* external;
  : 3) Events left in the new state longer than the allowed time (the new event time defined via config)
 :)
 
-let $pending := qe:create-batch(qc:event-update-status(), qc:internal-source(), qc:status-failed(), qh:pending-event-uris-for-timeout())
-let $executing := qe:create-batch(qc:event-update-status(), qc:internal-source(), qc:status-failed(), qh:executing-event-uris-for-timeout())
-let $new := qe:create-batch(qc:event-update-status(), qc:internal-source(), qc:status-failed(), qh:new-event-uris-for-timeout())
+let $pending := qe:create-batch(qc:event-update-status(), qc:internal-source(), qc:failed-status(), qh:pending-event-uris-for-timeout())
+let $executing := qe:create-batch(qc:event-update-status(), qc:internal-source(), qc:failed-status(), qh:executing-event-uris-for-timeout())
+let $new := qe:create-batch(qc:event-update-status(), qc:internal-source(), qc:failed-status(), qh:new-event-uris-for-timeout())
 
 let $_ := ($pending, $executing, $new) ! qh:write(.)
 
-return qc:status-finished()
+return qc:finished-status()
