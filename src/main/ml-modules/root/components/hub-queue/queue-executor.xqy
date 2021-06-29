@@ -5,6 +5,7 @@ module namespace qx = "http://noslogan.org/components/hub-queue/queue-executor";
 import module namespace qc = "http://noslogan.org/components/hub-queue/queue-config" at "queue-config.xqy";
 import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log" at "queue-log.xqy";
 import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "queue-event.xqy";
+import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "queue-handler.xqy";
 
 
 declare namespace queue = "http://noslogan.org/hub-queue";
@@ -38,14 +39,14 @@ declare function qx:handle-event($uri as xs:string) as xs:string? {
                         qc:finished-status())[1]
                     return (
                         qh:set-status($uri, $status),
-                        ql:trace-event("Event executed", $event),
+                        ql:trace-events("Event executed", $event),
                         ql:audit-events("Event executed", $uri, $event, $status, (), ()),
                         $status
                     )
                 else (
                     ql:audit-events("Event executor does not exist", $uri, $event, qc:failed-status(), (), ()),
                     ql:warn-events("Event executor does not exist", $event),
-                    ql:set-status($uri, qc:failed-status()),
+                    qh:set-status($uri, qc:failed-status()),
                     qc:failed-status()
                 )
 
@@ -90,23 +91,23 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
  :)
  declare function qx:execute($executor as element(queue:executor), $source as xs:string, $type as xs:string, $payload as item(), $uris as xs:string*) as xs:string? {
 
-    let $is-xquery := qx:is-xquery($executor)
-    let $module :=  if ($is-xquery) then $executor/queue:module/data() else qx:javascript($executor)
-    let $variables := qx:variables($is-xquery, $executor, $source, $type, $payload, $uris)
-    let $options := map:new() 
-        => map:with('isolation', 'different-transaction')
-        => map:with('update', 'auto')
-        => map:with('commit', 'auto') 
-
     try {
-        return if ($is-xquery) 
-            then xdmp:invoke($module, $variables, $options)
-            else xdmp:javascript-eval($module, $variables, $options)
+        let $is-xquery := qx:is-xquery($executor)
+        let $module :=  if ($is-xquery) then $executor/queue:module/data() else qx:javascript($executor)
+        let $variables := qx:variables($is-xquery, $executor, $source, $type, $payload, $uris)
+        let $options := map:new() 
+            => map:with('isolation', 'different-transaction')
+            => map:with('update', 'auto')
+            => map:with('commit', 'auto') 
+
+            return if ($is-xquery) 
+                then xdmp:invoke($module, $variables, $options)
+                else xdmp:javascript-eval($module, $variables, $options)
     } catch ($e) {
         (
             ql:error-uris("Error executing event", $e, $uris, $source, $type),
             ql:audit-events("Error executing event", $uris, (), (), (), $e),
-            return qc:failed-status()            
+            qc:failed-status()            
         )
     }
  };
@@ -123,13 +124,13 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
  : @return a map to use as variables
  :)
 declare private function qx:variables($xquery as xs:boolean, $executor as element(queue:executor), $source as xs:string, $type as xs:string, $payload as item(), $uris as xs:string*) {
-    let $fn := function($key as xs:string) { if ($xquery) then xdmp:key-from-QName(xs:QName('queue:' || $key)) else $key }
+    let $fn := function($key as xs:string) { if ($xquery) then xdmp:key-from-QName(xs:QName('queue:' || $key)) else $key }
     return map:new()
-        => map:with(xdmp:key-from-QName($fn('source'), $source)
-        => map:with(xdmp:key-from-QName($fn('type'), $type)
-        => map:with(xdmp:key-from-QName($fn('payload'), $payload)
-        => map:with(xdmp:key-from-QName($fn('uris'), $uris)
-        => map:with(xdmp:key-from-QName($fn('config'), $executor/queue:config)
+        => map:with(xdmp:key-from-QName($fn('source')), $source)
+        => map:with(xdmp:key-from-QName($fn('type')), $type)
+        => map:with(xdmp:key-from-QName($fn('payload')), $payload)
+        => map:with(xdmp:key-from-QName($fn('uris')), $uris)
+        => map:with(xdmp:key-from-QName($fn('config')), $executor/queue:config)
 };
 
 (:~

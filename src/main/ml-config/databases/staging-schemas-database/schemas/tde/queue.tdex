@@ -1,6 +1,6 @@
 <template xmlns="http://marklogic.com/xdmp/tde">
-  <description>Tabular Access to the Queued URIs</description>
-  <context>/queue:event/queue:uris/queue:uri</context>
+  <description>Tabular Access to the Queue</description>
+  <context>/queue:event</context>
   <enabled>true</enabled>
   <path-namespaces>
   <path-namespace>
@@ -11,57 +11,52 @@
   <rows>
     <row>
       <schema-name>queue</schema-name>
-      <view-name>uris</view-name>
+      <view-name>queue</view-name>
       <columns>
         <column>
             <name>id</name>
             <scalar-type>string</scalar-type>
-            <val>../../queue:id</val>
+            <val>queue:id</val>
         </column>
         <column>
             <name>uri</name>
-            <scalar-type>string</scalar-type>
-            <val>.</val>
-        </column>
-        <column>
-            <name>event_uri</name>
             <scalar-type>string</scalar-type>
             <val>xdmp:node-uri(.)</val>
         </column>
         <column>
             <name>created</name>
             <scalar-type>dateTime</scalar-type>
-            <val>../../queue:creation-timestamp</val>
+            <val>queue:creation-timestamp</val>
         </column>
         <column>
             <name>updated</name>
             <scalar-type>dateTime</scalar-type>
-            <val>xdmp:node-metadata-value(., 'queue-timestamp')</val>
+            <val>xdmp:node-metadata-value(., 'hub-queue-timestamp')</val>
         </column>
         <column>
             <name>status</name>
             <scalar-type>string</scalar-type>
-            <val>xdmp:node-metadata-value(., 'queue-status')</val>
+            <val>xdmp:node-metadata-value(., 'hub-queue-status')</val>
         </column>
         <column>
             <name>type</name>
             <scalar-type>string</scalar-type>
-            <val>../../queue:type</val>
+            <val>queue:type</val>
         </column>
         <column>
             <name>source</name>
             <scalar-type>string</scalar-type>
-            <val>../../queue:source</val>
+            <val>queue:source</val>
         </column>        
         <column>
             <name>transaction</name>
             <scalar-type>integer</scalar-type>
-            <val>../../queue:transaction</val>      
+            <val>queue:transaction</val>      
         </column>
         <column>
             <name>source_host</name>
             <scalar-type>string</scalar-type>
-            <val>../../queue:host</val>
+            <val>queue:host</val>
         </column>
       </columns>
     </row>

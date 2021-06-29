@@ -257,14 +257,14 @@ declare function qc:event-update-status() {
  : @return a map of the configuration for the queue
 :)
 declare private function qc:load-config() as map:map {
-    let $config := xdmp:invoke-function(
+    let $xml-config := xdmp:invoke-function(
         function() { cts:search(fn:doc(), cts:element-query(xs:QName("qc:queue-config"), cts:true-query()))[1]/qc:queue-config },
         map:new() => map:with('database', xdmp:modules-database()))
 
     (: Use the defaults to drive the process because some defaults are not overwritten by custom configuration :)
-    return map:map(
-        for $item in $config/qc:default-config/*
-            let $potential-default := $config/qc:custom-config/*[name=fn:name($item)]/data()
+    return map:new(
+        for $item in $xml-config/qc:default-config/*
+            let $potential-default := $xml-config/qc:custom-config/*[name=fn:name($item)]/data()
             return map:entry(fn:local-name($item), (
                 if (fn:starts-with($potential-default, "%%")) then () else $potential-default,
                 $item/data())[1]))

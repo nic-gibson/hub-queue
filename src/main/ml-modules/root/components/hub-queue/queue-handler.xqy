@@ -36,7 +36,6 @@ declare option xdmp:mapping "false";
 
     if (xdmp:database() = xdmp:database(qc:database())) 
         then
-            let $_ := xdmp:security-assert(qc:queue-privilege(), 'execute')
             let $uri := qh:uri(qe:id($event))
             return 
             (
@@ -96,28 +95,26 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) as empt
  :)
  declare function qh:get-event-uris($count as xs:positiveInteger, $current-status as xs:string, $new-status as xs:string?) as xs:string* {
 
-    (
-        xdmp:security-assert(qc:queue-privilege, 'execute'),
-        xdmp:invoke-function( function() {
+    xdmp:invoke-function( function() {
 
-            let $results := (op:from-view('queue', 'queue')
-                => op:order-by('updated')
-                => op:where(op:eq(op:col('status'), $current-status))
-                => op:select('uri')
-                => op:limit($count)
-                => op:result('object')) ! map:get(., 'queue.queue.uri')
+        let $results := (op:from-view('queue', 'queue')
+            => op:order-by('updated')
+            => op:where(op:eq(op:col('status'), $current-status))
+            => op:select('uri')
+            => op:limit($count)
+            => op:result('object')) ! map:get(., 'queue.queue.uri')
 
-            let $_ := if (fn:exists($new-status)) 
-                then $results ! qh:set-status(., $new-status)
-                else ()
+        let $_ := if (fn:exists($new-status)) 
+            then $results ! qh:set-status(., $new-status)
+            else ()
 
-            return $results
+        return $results
 
-        }, map:new() 
-            => map:with("database", xdmp:database(qc:database()))
-            => map:with("isolation", "different-transaction")
-            => map:with("update", "true"))
-    )
+    }, map:new() 
+        => map:with("database", xdmp:database(qc:database()))
+        => map:with("isolation", "different-transaction")
+        => map:with("update", "true"))
+
  };
 
 
@@ -131,28 +128,26 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) as empt
  :)
  declare function qh:get-event-documents($count as xs:positiveInteger, $current-status as xs:string, $new-status as xs:string?) as element(queue:event)* {
 
-    (
-        xdmp:security-assert(qc:queue-privilege(), 'execute'),
-        xdmp:invoke-function( function() {
+    xdmp:invoke-function( function() {
 
-            let $results := (op:from-view('queue', 'queue', ()) 
-                => op:order-by('updated')
-                => op:where(op:eq(op:col('status'), $current-status))
-                => op:select('uri')
-                => op:limit($count)
-                => op:result('object')) ! map:get(., 'queue.queue.uri')
+        let $results := (op:from-view('queue', 'queue', ()) 
+            => op:order-by('updated')
+            => op:where(op:eq(op:col('status'), $current-status))
+            => op:select('uri')
+            => op:limit($count)
+            => op:result('object')) ! map:get(., 'queue.queue.uri')
 
-            let $_ := if (fn:exists($new-status)) 
-                then $results ! qh:set-status(., $new-status)
-                else ()
+        let $_ := if (fn:exists($new-status)) 
+            then $results ! qh:set-status(., $new-status)
+            else ()
 
-            return $results ! fn:doc(.)/node()
+        return $results ! fn:doc(.)/node()
 
-        }, map:new() 
-            => map:with("database", xdmp:database(qc:database()))
-            => map:with("isolation", "different-transaction")
-            => map:with("update", "true"))
-    )
+    }, map:new() 
+        => map:with("database", xdmp:database(qc:database()))
+        => map:with("isolation", "different-transaction")
+        => map:with("update", "true"))
+
  };
 
 (:~ 
@@ -162,9 +157,7 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) as empt
 :)
 declare function qh:event-uris-for-deletion() as xs:string* {
 
-    let $_ := xdmp:security-assert(qc:queue-privilege, 'execute')
-
-    return (op:from-view('queue', 'queue', ()) 
+    (op:from-view('queue', 'queue', ()) 
         => op:order-by('updated')
         => op:where(op:or(
             op:eq(op:col('status'), qc:failed-status()),
@@ -220,8 +213,6 @@ declare function qh:execution-event-uris-for-timeout() as xs:string* {
 :)
 declare function qh:delete-events($uris as xs:string*) as empty-sequence() {
 
-    let $_ := xdmp:security-assert(qc:queue-privilege, 'execute')
-
     let $events := xdmp:eager(if (qc:detailed-log()) then  ($uris ! fn:doc(.)) else ())
     let $statuses := xdmp:eager(if (qc:detailed-log()) then ($events ! qe:event-status(.)) else ())
     let $timestamps := xdmp:eager(if (qc:detailed-log()) then ($events ! qe:event-timestamp(.)) else ())
@@ -242,7 +233,6 @@ declare function qh:delete-events($uris as xs:string*) as empty-sequence() {
  :)
 declare function qh:get-event($uri as xs:string, $status as xs:string?) as element(queue:event)? {
     (   
-        xdmp:security-assert(qc:queue-privilege, 'execute'),
         if (fn:exists($status)) then qh:set-status($uri, $status) else (),
         xdmp:invoke-function( function() { fn:doc($uri) }, map:new() => map:with('database', qc:database()))
     )
@@ -258,7 +248,6 @@ declare function qh:get-event($uri as xs:string, $status as xs:string?) as eleme
 :)
 declare function qh:timeouts-by-status($status as xs:string, $duration as xs:dayTimeDuration) as xs:string* {
 
-    let $_ := xdmp:security-assert(qc:queue-privilege, 'execute')
     let $max-age := fn:current-dateTime() - $duration
 
     return (op:from-view('queue', 'queue', ())
