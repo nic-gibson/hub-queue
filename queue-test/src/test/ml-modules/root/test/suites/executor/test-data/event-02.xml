@@ -1,0 +1,16 @@
+<queue:event xmlns:queue="http://noslogan.org/hub-queue/">
+    <queue:id>13ce061c-2b47-4f99-b068-faf2cee29068</queue:id>
+    <queue:type>test-job</queue:type>
+    <queue:source>testing93</queue:source>
+    <queue:transaction>15710557944335112285</queue:transaction>
+    <queue:host>newt.noslogan.org</queue:host>
+    <queue:creation-timestamp>2021-06-08T21:20:09.372938+01:00</queue:creation-timestamp>
+    <queue:payload kind="element">
+        <foo>
+        </foo>
+    </queue:payload>
+    <queue:uris>
+        <queue:uri>/test/1.xml</queue:uri>
+        <queue:uri>/test/2.xml</queue:uri>
+    </queue:uris>
+</queue:event>

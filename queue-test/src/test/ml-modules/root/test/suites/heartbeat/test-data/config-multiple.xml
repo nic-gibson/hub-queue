@@ -1,0 +1,16 @@
+<q:heartbeats xmlns:q="http://noslogan.org/hub-queue">
+    <q:heartbeat-config >
+        <q:description>Generate a ping event every 15 minutes</q:description>
+        <q:heartbeat-id>FifteenMinute</q:heartbeat-id>
+         <q:type>http://noslogan.org/hub-queue/queue/event/ping</q:type>
+        <q:source>http://noslogan.org/hub-queue/queue/source/test</q:source>
+        <q:payload>Testing the fifteen minute hearbeat</q:payload>
+    </q:heartbeat-config>
+    <q:heartbeat-config>
+        <q:description>Generate a ping event every five minutes</q:description>
+        <q:heartbeat-id>FiveMinute</q:heartbeat-id>
+        <q:type>http://noslogan.org/hub-queue/queue/event/ping</q:type>
+        <q:source>http://noslogan.org/hub-queue/queue/source/test</q:source>
+        <q:payload>Testing the five minute hearbeat</q:payload>
+    </q:heartbeat-config>
+</q:heartbeats>
