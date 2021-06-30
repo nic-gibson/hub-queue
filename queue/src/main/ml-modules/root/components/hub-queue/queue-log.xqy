@@ -13,8 +13,7 @@ declare namespace queue = "http://noslogan.org/hub-queue";
 declare option xdmp:mapping "false";
 
 (:~
- : Write an audit message for zero or more events, If logging is not in detail mode only the URIs will be 
- : be included in the log. Logs are written in XML because events are written in XML
+ : Write an audit message for zero or more events
  : @param $message the text for this log entry
  : @param $events a sequence of zero or more events (in order with $uris)
  : @param $status the matching statuses for the nodes (used when documents have been deleted)
@@ -25,7 +24,7 @@ declare option xdmp:mapping "false";
 declare function ql:audit-events($message as xs:string, $uris as xs:string*, $events as element(queue:event)*, $statuses as xs:string*, $timestamps as xs:dateTime*, $errors as item()*) as empty-sequence() {
 
     if (xdmp:database() = xdmp:database(qc:log-database())) 
-        then xdmp:document-insert(
+        then xdmp:invoke-function( function() { xdmp:document-insert(
             qc:log-prefix() || sem:uuid-string() || ".xml",
             element queue-log {
                 element queue:message { $message },
@@ -39,25 +38,21 @@ declare function ql:audit-events($message as xs:string, $uris as xs:string*, $ev
                 if (fn:exists($errors))
                     then element queue:errors { $errors }
                     else (),
-                if (qc:detailed-log()) 
-                    then element queue:events {
-                        for $event at $pos in $events return  element queue:event {
-                            $event/*,
-                            element queue:status { (qe:event-status(.), $statuses[$pos])[1] },
-                            element queue:update-timestamp { (qe:event-timestamp(.), $timestamps[$pos])[1] } 
-                        }
+                element queue:events {
+                    for $event at $pos in $events return  element queue:event {
+                        $event/*,
+                        element queue:status { (qe:event-status($event), $statuses[$pos])[1] },
+                        element queue:update-timestamp { (qe:event-timestamp($event), $timestamps[$pos])[1] } 
                     }
-
-                    else ()
-            }
-            ,
+                  }
+            },
             map:new() 
                 => map:with('collections', qc:log-collection())
                 => map:with('permissions', qc:permissions())
-        )
+        ) }, map:new() => map:with('isolation', 'different-transaction') => map:with('update', 'true'))
         else xdmp:invoke-function( 
             function() { ql:audit-events($message, $uris, $events, $statuses, $timestamps, ()) }, 
-                map:new() => map:with("database", qc:log-database()))
+                map:new() => map:with("database", xdmp:database(qc:log-database())))
 };
 
 (:~ 
@@ -149,7 +144,7 @@ declare function ql:error-uris($message as xs:string, $error as item()?, $uris a
  : @return empty sequence
 :)
 declare function ql:error-uris($message as xs:string, $error as item()?, $uris as xs:string*, $source as xs:string?, $type as xs:string?) as empty-sequence() {
-    xdmp:log(ql:format-with-uris($message, $uris, $source, $type, ()), 'error')
+    xdmp:log(ql:format-with-uris($message, $uris, $source, $type, $error), 'error')
 };
 
 (:~ 

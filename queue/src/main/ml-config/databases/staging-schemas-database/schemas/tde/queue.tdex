@@ -34,6 +34,12 @@
             <val>xdmp:node-metadata-value(., 'hub-queue-timestamp')</val>
         </column>
         <column>
+            <name>priority</name>
+            <scalar-type>boolean</scalar-type>
+            <val>queue:priority</val>
+            <nullable>true</nullable>
+        </column>
+        <column>
             <name>status</name>
             <scalar-type>string</scalar-type>
             <val>xdmp:node-metadata-value(., 'hub-queue-status')</val>

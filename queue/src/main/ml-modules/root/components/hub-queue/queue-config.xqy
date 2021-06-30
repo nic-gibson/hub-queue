@@ -38,7 +38,11 @@ declare function qc:collection() as xs:string {
  : @return a sequence of sec:permission objects
 :)
 declare function qc:additional-permissions() as map:map* {
-    qc:parse-permissions(map:get($config, 'additional-permissions'))
+    qc:additional-permissions('object')
+};
+
+declare function qc:additional-permissions($as as xs:string) as item()* {
+    qc:parse-permissions(map:get($config, "additional-permissions"), $as)
 };
 
 (:~ 
@@ -46,19 +50,34 @@ declare function qc:additional-permissions() as map:map* {
 :)
 declare function qc:permissions() as map:map* {
     (
-        qc:parse-permissions(map:get($config, 'queue-permissions')),
-        qc:additional-permissions()
+        qc:permissions("object"),
+        qc:additional-permissions("object")
     )
 };
 
+declare function qc:permissions($as as xs:string*) as item()* {
+    (
+        qc:parse-permissions(map:get($config, 'queue-permissions'), $as),
+        qc:additional-permissions($as)
+    )
+};
+
+
 (:~ 
  : Get all the permissions to be assigned to a new log document
- : @return a sequence of permission objects 
+ : @return a sequence of permission objects
 :)
 declare function qc:log-permissions() as map:map* {
     (
-        qc:parse-permissions(map:get($config, 'log-permissions')),
-        qc:additional-permissions()
+        qc:log-permissions('object'),
+        qc:additional-permissions('object')
+    )
+};
+
+declare function qc:log-permissions($as as xs:string) as item()* {
+    (
+        qc:parse-permissions(map:get($config, 'log-permissions'), $as),
+        qc:additional-permissions($as)
     )
 };
 
@@ -171,14 +190,14 @@ declare function qc:timestamp-metadata-name() as xs:string {
  : entry being returned to new status
  :)
 declare function qc:new-status() {
-    qc:collection-prefix() || '/status/new'
+    qc:collection-prefix() || 'status/new'
 };
 
 (:~
  : Return the collection URI for pending event. 
  :)
  declare function qc:pending-status() {
-     qc:collection-prefix() || '/status/pending'
+     qc:collection-prefix() || 'status/pending'
  };
 
  
@@ -186,7 +205,7 @@ declare function qc:new-status() {
  : Return the collection URI for execution event. 
  :)
  declare function qc:executing-status() {
-     qc:collection-prefix() || '/status/executing'
+     qc:collection-prefix() || 'status/executing'
  };
 
 
@@ -194,28 +213,28 @@ declare function qc:new-status() {
  : Return the collection URI for failed event. 
  :)
  declare function qc:failed-status() {
-     qc:collection-prefix() || '/status/failed'
+     qc:collection-prefix() || 'status/failed'
  };
 
 (:~
  : Return the collection URI for finished events. 
  :)
  declare function qc:finished-status() {
-     qc:collection-prefix() || '/status/finished'
+     qc:collection-prefix() || 'status/finished'
 };
 
 (:~ 
  : Return the source type for internal events
 :)
 declare function qc:internal-source() {
-    qc:collection-prefix() || "/source/internal"
+    qc:collection-prefix() || "source/internal"
 };
 
 (:~ 
  : Return the source type for heartbeat events
 :)
 declare function qc:heartbeat-source() {
-    qc:collection-prefix() || "/source/heartbeat"
+    qc:collection-prefix() || "source/heartbeat"
 };
 
 
@@ -223,21 +242,21 @@ declare function qc:heartbeat-source() {
  : Return the event type for the queue reset internal event type
  :)
 declare function qc:event-reset() {
-    qc:collection-prefix() || '/event/reset'
+    qc:collection-prefix() || 'event/reset'
 };
 
 (:~
  : Return the event type for the queue clear internal event type
  :)
 declare function qc:event-clear() {
-    qc:collection-prefix() || '/event/clear'
+    qc:collection-prefix() || 'event/clear'
 };
 
 (:~
- : Return the event type for the queue clear internal event type
+ : Return the event type for the queue status update internal event type
  :)
 declare function qc:event-update-status() {
-    qc:collection-prefix() || '/event/update-status'
+    qc:collection-prefix() || 'event/update-status'
 };
 
 (:~
@@ -264,7 +283,7 @@ declare private function qc:load-config() as map:map {
     (: Use the defaults to drive the process because some defaults are not overwritten by custom configuration :)
     return map:new(
         for $item in $xml-config/qc:default-config/*
-            let $potential-default := $xml-config/qc:custom-config/*[name=fn:name($item)]/data()
+            let $potential-default := $xml-config/qc:custom-config/*[name()=fn:name($item)]/data()
             return map:entry(fn:local-name($item), (
                 if (fn:starts-with($potential-default, "%%")) then () else $potential-default,
                 $item/data())[1]))
@@ -274,9 +293,10 @@ declare private function qc:load-config() as map:map {
 (:~ 
  : Convert a sequence of role/capability pairs into permissions 
  : @param $permissions-string the strings to be parsed
- : @return a sequence of permission maps
+ : @param $as either 'object' or 'element'
+ : @return a sequence of permission maps or elements
  :)
- declare function qc:parse-permissions($permission-string as xs:string?) as map:map* {
+ declare function qc:parse-permissions($permission-string as xs:string?, $as as xs:string) as item()* {
     let $tokens := if ($permission-string = '') then () else fn:tokenize($permission-string, '\s*,\s*')
 
     (: if it's not divisible by two something is wrong :)
@@ -290,5 +310,5 @@ declare private function qc:load-config() as map:map {
             let $capabilities := $tokens[position() mod 2 = 0]
             return for $role at $n in $roles 
                 (: this will raise an exception if either capability or role is wrong :)
-                return xdmp:permission($role, $capabilities[$n], 'object')
+                return xdmp:permission($role, $capabilities[$n], $as)
 };

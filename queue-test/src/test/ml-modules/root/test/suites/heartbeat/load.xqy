@@ -13,7 +13,7 @@ declare option xdmp:mapping "false";
  : deploy will have placed it in the modules db where we need it to be.
 :)
 
-return (
+(
     test:assert-all-exist(1, qt:find-heartbeat-configs('OneMinute')),
     test:assert-all-exist(1, qt:find-heartbeat-configs('FiveMinute')),
     test:assert-all-exist(1, qt:find-heartbeat-configs('FifteenMinute'))

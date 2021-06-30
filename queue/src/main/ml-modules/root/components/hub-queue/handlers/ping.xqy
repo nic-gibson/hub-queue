@@ -4,11 +4,11 @@ import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log
 
 declare namespace queue = "http://noslogan.org/hub-queue";
 
-declare variable $q:source as xs:string external;
-declare variable $q:type as xs:string external;
-declare variable $q:payload as item() external;
-declare variable $q:config as element(q:config)? external;
-declare variable $q:uris as xs:string* external;
+declare variable $queue:source as xs:string external;
+declare variable $queue:type as xs:string external;
+declare variable $queue:payload as item() external;
+declare variable $queue:config as element(queue:config)? external;
+declare variable $queue:uris as xs:string* external;
 
 
 (:~ 
@@ -18,6 +18,6 @@ declare variable $q:uris as xs:string* external;
  : and updates the collections on each of the URIs to add "PINGED" to them
  :)
 (
-    ql:log-uris("PING EVENT", $uris, $source, $type),
-    $uris ! xdmp:document-add-properties(., 'PINGED')
+    ql:log-uris("PING EVENT", $queue:uris, $queue:source, $queue:type),
+    $queue:uris ! xdmp:document-add-collections(., 'PINGED')
 )

@@ -1,7 +1,7 @@
 <q:heartbeat-config xmlns:q="http://noslogan.org/hub-queue">
    <q:description>Generate a ping event every minute</q:description>
    <q:heartbeat-id>OneMinute</q:heartbeat-id>
-   <q:type>http://noslogan.org/hub-queue/queue/event/ping</q:type>
-   <q:source>http://noslogan.org/hub-queue/queue/source/test</q:source>
+   <q:type>http://noslogan.org/hub-queue/event/ping</q:type>
+   <q:source>http://noslogan.org/hub-queue/source/heartbeat</q:source>
    <q:payload>0123456789</q:payload>
 </q:heartbeat-config>

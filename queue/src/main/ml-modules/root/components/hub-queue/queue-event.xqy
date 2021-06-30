@@ -25,14 +25,32 @@ declare option xdmp:mapping "false";
  : @return a queue event element to be stored into the queue
 :)
 declare function qe:create-batch($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*) as element(queue:event) {
+    qe:create-batch($type, $source, $payload, $uris, fn:false())
+};
+
+(:~ 
+ : Create one or more events by breaking up the URIs to be more than the configured maximum 
+ : @param $type the queue event type used to define the processor to be applied when the queue event is applied
+ : @param $source a string used to indentify the creator of the event
+ : @param $payload the data to be passed to the queue processor
+ : @param $uris the sequence of URIs to be processed
+ : @param priority set to true to create a priority event (only internal events have priority and are processed first)
+ : @return a queue event element to be stored into the queue
+:)
+declare function qe:create-batch($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*, $priority as xs:boolean) as element(queue:event) {
 
     for $n in 1 to xs:integer(math:ceil(fn:count($uris) div qc:max-uris()))
         let $start := ($n - 1) * qc:max-uris() + 1
         return qe:create($type, $source, $payload, 
             fn:subsequence($uris, 
                 ($n - 1) * qc:max-uris() + 1, 
-                qc:max-uris()))
+                qc:max-uris()), $priority)
 };
+
+
+
+
+
 (:~
  : Create a new queue event element ready to be stored to the queue. 
  : @param $type the queue event type used to define the processor to be applied when the queue event is applied
@@ -42,6 +60,19 @@ declare function qe:create-batch($type as xs:string, $source as xs:string, $payl
  : @return a queue event element to be stored into the queue
 :)
 declare function qe:create($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*) as element(queue:event) {
+        qe:create($type, $source, $payload, $uris, fn:false())
+};
+
+(:~
+ : Create a new queue event element ready to be stored to the queue. 
+ : @param $type the queue event type used to define the processor to be applied when the queue event is applied
+ : @param $source a string used to indentify the creator of the event
+ : @param $payload the data to be passed to the queue processor
+ : @param $uris the sequence of URIs to be processed
+ : @param $priority  set to true to create a priority event (only internal events have priority and are processed first)
+ : @return a queue event element to be stored into the queue
+:)
+declare function qe:create($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*, $priority as xs:boolean) as element(queue:event) {
 
     (: these can't be empty :)
     let $_ := if (fn:not($type and $source) )
@@ -60,6 +91,7 @@ declare function qe:create($type as xs:string, $source as xs:string, $payload as
         element queue:id { sem:uuid-string() },
         element queue:type { $type },
         element queue:source { $source },
+        element queue:priority { $priority },
         element queue:transaction { xdmp:transaction() },
         element queue:user { xdmp:get-current-user() },
         element queue:host { xdmp:host-name(xdmp:host())},
@@ -204,7 +236,7 @@ declare function qe:restore-payload($payload as element(queue:payload)) as item(
     switch ($payload/@kind)
         case 'object' return json:object($payload/node())
         case 'array' return json:array($payload/node())
-        case 'element' return $payload/node()
+        case 'element' return $payload/*
         case 'map' return map:map($payload/node())
         default return $payload/node()/data()
 };

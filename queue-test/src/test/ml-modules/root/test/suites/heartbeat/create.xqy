@@ -22,6 +22,6 @@ let $event := qh:get-event-documents(1, qc:new-status(), ())
 return (
     test:assert-exists($event),
     test:assert-equal(qc:heartbeat-source(), qe:source($event)),
-    test:assert-equal('ping', qe:type($event))
+    test:assert-equal('http://noslogan.org/hub-queue/event/ping', qe:type($event))
 )
 

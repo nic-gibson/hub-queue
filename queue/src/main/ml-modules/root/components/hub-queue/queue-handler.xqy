@@ -22,7 +22,7 @@ declare option xdmp:mapping "false";
  : @return a URI
  :)
  declare function qh:uri($id as xs:string) as xs:anyURI {
-    xs:anyURI(qc:uri-prefix() || $id || '.json')
+    xs:anyURI(qc:uri-prefix() || $id || '.xml')
  };
 
 
@@ -72,22 +72,21 @@ declare option xdmp:mapping "false";
 ~:)
 declare function qh:set-status($uris as xs:string, $status as xs:string) as empty-sequence() {
 
-    let $_ := xdmp:security-assert(qc:queue-privilege, 'execute')
     let $_ := for $uri in $uris return  xdmp:document-set-metadata($uri,
         xdmp:document-get-metadata($uri)
-            => map:with('status', $status)
-            => map:with('timestamp', fn:current-dateTime()))
+            => map:with(qc:status-metadata-name(), $status)
+            => map:with(qc:timestamp-metadata-name(), fn:current-dateTime()))
 
     return (
         ql:trace-uris("Status updated to  " || $status, $uris),
-        ql:audit-events("Status set to " || $status, $uris, if (qc:detailed-log()) then  ($uris ! fn:doc(.)) else (), (), (), ())
+        ql:audit-events("Status set to " || $status, $uris, if (qc:detailed-log()) then  ($uris ! fn:doc(.)/queue:event) else (), (), (), ())
     )
 };
 
 
 (:~
  : Get N event URIs from the queue, setting the status if a status is provided
- : Events are retrieved in time order (oldest first)
+ : Events are retrieved in priority then time order (oldest first)
  : @param $count the number of event URIs to retrieve from the queue
  : @param $current-status the status of the events to be retrieved
  : @param $new-status the status to be set if required
@@ -98,7 +97,8 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) as empt
     xdmp:invoke-function( function() {
 
         let $results := (op:from-view('queue', 'queue')
-            => op:order-by('updated')
+            => op:order-by(op:desc(op:col('priority')))
+            => op:order-by(op:asc(op:col('updated')))
             => op:where(op:eq(op:col('status'), $current-status))
             => op:select('uri')
             => op:limit($count)
@@ -158,7 +158,8 @@ declare function qh:set-status($uris as xs:string, $status as xs:string) as empt
 declare function qh:event-uris-for-deletion() as xs:string* {
 
     (op:from-view('queue', 'queue', ()) 
-        => op:order-by('updated')
+        => op:order-by(op:asc(op:col('updated')))
+        => op:order-by(op:desc(op:col('priority')))
         => op:where(op:or(
             op:eq(op:col('status'), qc:failed-status()),
             op:eq(op:col('status'), qc:finished-status())))
@@ -234,7 +235,7 @@ declare function qh:delete-events($uris as xs:string*) as empty-sequence() {
 declare function qh:get-event($uri as xs:string, $status as xs:string?) as element(queue:event)? {
     (   
         if (fn:exists($status)) then qh:set-status($uri, $status) else (),
-        xdmp:invoke-function( function() { fn:doc($uri) }, map:new() => map:with('database', qc:database()))
+        xdmp:invoke-function( function() { fn:doc($uri)/queue:event }, map:new() => map:with('database', xdmp:database(qc:database())))
     )
 };
 
@@ -251,7 +252,7 @@ declare function qh:timeouts-by-status($status as xs:string, $duration as xs:day
     let $max-age := fn:current-dateTime() - $duration
 
     return (op:from-view('queue', 'queue', ())
-        => op:order-by('updated')
+        => op:order-by(op:desc(op:col('priority')))        
         => op:where(op:and(
             op:eq(op:col('status'), $status),
             op:lt(op:col('updated'), $max-age)))

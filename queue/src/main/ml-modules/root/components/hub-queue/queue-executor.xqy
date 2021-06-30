@@ -25,28 +25,26 @@ declare option xdmp:mapping "false";
  : @param $uri the event URI
  : @return the new status set
 :)
-declare function qx:handle-event($uri as xs:string) as xs:string? {
+declare function qx:execute-event($uri as xs:string) as xs:string? {
 
     let $event := qh:get-event($uri, qc:executing-status())
     
-    return if (fn:exists($event))
+    let $status := if (fn:exists($event))
         then
             let $executor := qx:find-executor($event)
             return if (fn:exists($executor)) 
                 then
                     let $status := (
-                        qx:execute($executor, qe:source($event), qe:type($event), qe:payload($event), qe:uris($event)),
+                        qx:execute($executor, $event),
                         qc:finished-status())[1]
                     return (
-                        qh:set-status($uri, $status),
                         ql:trace-events("Event executed", $event),
                         ql:audit-events("Event executed", $uri, $event, $status, (), ()),
                         $status
                     )
                 else (
                     ql:audit-events("Event executor does not exist", $uri, $event, qc:failed-status(), (), ()),
-                    ql:warn-events("Event executor does not exist", $event),
-                    qh:set-status($uri, qc:failed-status()),
+                    ql:error-events("Event executor does not exist", $event),
                     qc:failed-status()
                 )
 
@@ -55,6 +53,8 @@ declare function qx:handle-event($uri as xs:string) as xs:string? {
                 ql:warn-uris("Event URI does not exist", $uri)
             )
 
+    let $new-uri := qh:write(qe:create(qc:event-update-status(), qc:internal-source(), $status, $uri, fn:true()))
+    return $status
 };
 
 
@@ -68,10 +68,10 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
     xdmp:invoke-function(function() {
         (cts:search(
             fn:doc(),
-            cts:element-query(xs:QName('queue:executor'),
+            cts:element-query(xs:QName("queue:executor"),
                 cts:and-query((
-                    cts:element-value-query('queue:type', $event/queue:type),
-                    cts:element-value-query('queue:source', $event/queue:source)
+                    cts:element-value-query(xs:QName("queue:type"), $event/queue:type),
+                    cts:element-value-query(xs:QName("queue:source"), $event/queue:source)
                 ))))//queue:executor)[1]
     }, map:new() => map:with('database', xdmp:modules-database()))
 };
@@ -83,18 +83,15 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
  : That wrapper includes an import of the module and wraps the actual call in a try/catch
  : statement so that we can return enough information we can handle the error cleanly.
  : @param $config - the configuration element
- : @param $source - the event source
- : @param $type - the event type
- : @param $payload - the event payload
- : @param $uris - the event URIs
+ : @param $event - the event to be executed
  : @return the result of the called module. 
  :)
- declare function qx:execute($executor as element(queue:executor), $source as xs:string, $type as xs:string, $payload as item(), $uris as xs:string*) as xs:string? {
+ declare function qx:execute($executor as element(queue:executor), $event as element(queue:event)) as xs:string? {
 
     try {
         let $is-xquery := qx:is-xquery($executor)
         let $module :=  if ($is-xquery) then $executor/queue:module/data() else qx:javascript($executor)
-        let $variables := qx:variables($is-xquery, $executor, $source, $type, $payload, $uris)
+        let $variables := qx:variables($is-xquery, $executor, $event)
         let $options := map:new() 
             => map:with('isolation', 'different-transaction')
             => map:with('update', 'auto')
@@ -105,8 +102,8 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
                 else xdmp:javascript-eval($module, $variables, $options)
     } catch ($e) {
         (
-            ql:error-uris("Error executing event", $e, $uris, $source, $type),
-            ql:audit-events("Error executing event", $uris, (), (), (), $e),
+            ql:error-uris("Error executing event", $e, xdmp:node-uri($event), qe:source($event), qe:type($event)),
+            ql:audit-events("Error executing event", $event, (), (), (), $e),
             qc:failed-status()            
         )
     }
@@ -117,20 +114,17 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
  : type of execution. 
  : @param $xquery - true if it's xquery, false if javascript
  : @param $executor - the execution module  definition
- : @param $source - the event source
- : @param $type - the event type
- : @param $payload - the event payload
- : @param $uris - the event URIs
+ : @param $event - the event to be executed
  : @return a map to use as variables
  :)
-declare private function qx:variables($xquery as xs:boolean, $executor as element(queue:executor), $source as xs:string, $type as xs:string, $payload as item(), $uris as xs:string*) {
+declare private function qx:variables($xquery as xs:boolean, $executor as element(queue:executor), $event as element(queue:event)) {
     let $fn := function($key as xs:string) { if ($xquery) then xdmp:key-from-QName(xs:QName('queue:' || $key)) else $key }
     return map:new()
-        => map:with(xdmp:key-from-QName($fn('source')), $source)
-        => map:with(xdmp:key-from-QName($fn('type')), $type)
-        => map:with(xdmp:key-from-QName($fn('payload')), $payload)
-        => map:with(xdmp:key-from-QName($fn('uris')), $uris)
-        => map:with(xdmp:key-from-QName($fn('config')), $executor/queue:config)
+        => map:with($fn('source'), qe:source($event))
+        => map:with($fn('type'), qe:type($event))
+        => map:with($fn('payload'), qe:payload($event))
+        => map:with($fn('uris'), qe:uris($event))
+        => map:with($fn('config'), $executor/queue:config)
 };
 
 (:~
