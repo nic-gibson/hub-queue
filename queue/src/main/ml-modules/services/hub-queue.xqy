@@ -25,14 +25,14 @@ declare function get($context as map:map, $params as map:map) as document-node()
         then () 
         else fn:error((), "RESTAPISRVEXERR", (415, "Unsupported media type", "Output must be JSON, XML or text"))
 
-    let $events := qh:get-event-uris($count, qc:new-status(), qc:pending-status())
+    let $events := qh:get-event-ids($count, qc:new-status(), qc:pending-status())
 
     return (
         map:put($context, "output-type", $output),
         document {
             if ($output = "text/xml") 
                 then element list:event-list {  
-                    $events ! element list:event-uri { . }
+                    $events ! element list:event-id { . }
                 }
             else if ($output = "application/json") 
                 then json:object() => map:with("eventList", json:to-array($events))
@@ -52,35 +52,35 @@ declare function put(
     let $output := map:get($context, "accept-types")[. = ("text/xml", "application/json", "text/plain")][1]
     let $_ := if (fn:exists($output)) 
         then () 
-        else fn:error((), "RESTAPISRVEXERR", (415, "Unsupported media type", "Output must be JSON or XML"))
+        else fn:error((), "RESTAPISRVEXERR", (415, "Unsupported media type", "Output must be JSON, XML or text"))
 
-    let $uris := for $doc at $pos in $input 
+    let $ids := for $doc at $pos in $input 
         let $input-type := map:get($context, "input-types")[$pos]
         return if ($input-type = "application/json")
-            then $doc/node()/eventList/data()
+            then $doc/node()/*
             else if ($input-type = "text/xml")
-                then $doc/list:event-list/list:event-uri/data()
+                then $doc/list:event-list/list:event/list:event-id/data()
             else fn:error((), "RESTAPISRVEXERR", (415, "Unsupported media type", "Input must be JSON or XML"))
 
-    let $status-list := $uris ! qx:execute-event(.)
+    let $status-list := $ids ! qx:execute-event(.)
     
     return (
         map:put($context, "output-type", $output),
         document {
             if ($output = "text/xml") 
-                then element list:result-list {  
-                    for $uri at $pos in $uris return 
-                        element list:result {
-                            element list:event-uri { $uri },
-                            element list:result { $status-list[$pos] }
+                then element list:event-list {  
+                    for $id at $pos in $ids return 
+                        element list:event {
+                            element list:event-id { $id },
+                            element list:event-status { $status-list[$pos] }
                         }
                 }
             else if ($output = "application/json") 
                 then json:object() => map:with("resultList", json:to-array(
-                    for $uri at $pos in $uris return 
-                        json:object() => map:with("uri", $uri) => map:with("result", $status-list[$pos])))
+                    for $id at $pos in $ids return 
+                        json:object() => map:with("id", $id) => map:with("status", $status-list[$pos])))
                 else fn:string-join(
-                    (for $uri at $pos in $uris return $uri || "," || $status-list[$pos]),
+                    (for $id at $pos in $ids return $id || "," || $status-list[$pos]),
                      "&#x0D;&#x0A;")
         }
     )

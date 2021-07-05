@@ -18,7 +18,7 @@ declare namespace queue = "http://noslogan.org/hub-queue";
  : @param $source a string used to indentify the creator of the event
  : @param $payload the data to be passed to the queue processor
  : @param $uris the sequence of URIs to be processed
- : @return URIs of the events written to the queue
+ : @return ids of the events written to the queue
 :)
 declare function q:create-batch($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*) as xs:string+ {
     qe:create-batch($type, $source, $payload, $uris) ! qh:write(.)
@@ -31,7 +31,7 @@ declare function q:create-batch($type as xs:string, $source as xs:string, $paylo
  : @param $source a string used to indentify the creator of the event
  : @param $payload the data to be passed to the queue processor
  : @param $uris the sequence of URIs to be processed
- : @return URI of the event written to the queue
+ : @return id of the event written to the queue
 :)
 declare function q:create($type as xs:string, $source as xs:string, $payload as item(), $uris as xs:string*) as xs:string {
     qh:write(qe:create($type, $source, $payload, $uris))

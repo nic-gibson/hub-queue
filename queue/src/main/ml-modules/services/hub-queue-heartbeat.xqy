@@ -29,20 +29,17 @@ declare function put(
 
     return if (fn:exists($id)) 
         then
-            let $uris := qt:heartbeat($id)
+            let $ids := qt:heartbeat($id)
             return (
                 map:put($context, "output-type", $output),
                 document {
                     if ($output = "text/xml") 
-                        then element list:result-list {  
-                            for $uri at $pos in $uris return 
-                                element list:result {
-                                    element list:event-uri { $uri }
-                                }
+                        then element list:event-list {  
+                                $ids ! element list:event { element list:event-id { . } }
                             }
                         else if ($output = "application/json") 
-                            then json:object() => map:with("resultList", json:to-array($uris))
-                            else fn:string-join($uris, "&#x0D;&#x0A;")
+                            then json:object() => map:with("resultList", json:to-array($ids))
+                            else fn:string-join($ids, "&#x0D;&#x0A;")
                 }
             )
 

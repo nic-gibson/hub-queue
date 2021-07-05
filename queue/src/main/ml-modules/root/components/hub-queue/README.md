@@ -192,3 +192,17 @@ The JSON format is similar:
 
 The PUT verb requests event processing on event URIs. The document format required is exactly the same as that used for the GET verb (the simplest behavior of a calling application would be to GET and then POST the document). The `rs:count` parameter is not required for PUTs.
 
+
+## Notes on Status
+
+The queue mechanism supports the following status values for an event:
+
+* new
+* pending
+* executing
+* finished
+* failed
+
+All events are created with **new** status. When an event is returned from the REST API (`/v1/resources/hub-queue`) the status is set to **pending**. When a pending event is passed to the execution module, the status is set to **executing**. On success the status is set to **finished* and on failure to **failed**. 
+
+Event status is stored as a separate document to the event itself. For most of the lifespan of an event there is a one to one correspondance between status and event. However, when executing the status sent when executing finishes is added. If not, the deltds

@@ -1,0 +1,34 @@
+<template xmlns="http://marklogic.com/xdmp/tde">
+  <description>Tabular Access to the Queue Status Documents</description>
+  <context>/queue:status</context>
+  <enabled>true</enabled>
+  <path-namespaces>
+  <path-namespace>
+    <prefix>queue</prefix>
+    <namespace-uri>http://noslogan.org/hub-queue</namespace-uri>
+  </path-namespace>
+</path-namespaces>
+  <rows>
+    <row>
+      <schema-name>queue</schema-name>
+      <view-name>status</view-name>
+      <columns>
+        <column>
+            <name>id</name>
+            <scalar-type>string</scalar-type>
+            <val>queue:id</val>
+        </column>
+        <column>
+            <name>status</name>
+            <scalar-type>string</scalar-type>
+            <val>queue:value</val>
+        </column>
+        <column>
+            <name>updated</name>
+            <scalar-type>dateTime</scalar-type>
+            <val>queue:updated</val>
+        </column>
+      </columns>
+    </row>
+  </rows>
+</template>

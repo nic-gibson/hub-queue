@@ -33,16 +33,7 @@
             <scalar-type>dateTime</scalar-type>
             <val>../../queue:creation-timestamp</val>
         </column>
-        <column>
-            <name>updated</name>
-            <scalar-type>dateTime</scalar-type>
-            <val>xdmp:node-metadata-value(., 'hub-queue-timestamp')</val>
-        </column>
-        <column>
-            <name>status</name>
-            <scalar-type>string</scalar-type>
-            <val>xdmp:node-metadata-value(., 'hub-queue-status')</val>
-        </column>
+
         <column>
             <name>type</name>
             <scalar-type>string</scalar-type>

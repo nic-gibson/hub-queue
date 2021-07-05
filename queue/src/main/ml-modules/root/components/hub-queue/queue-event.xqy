@@ -183,25 +183,6 @@ declare function qe:creation-timestamp($event as element(queue:event)) as xs:dat
     $event/queue:creation-timestamp/data()
 };
 
-(:~ 
- : Get the queue status for an event node 
- : @param $event the event element
- : @return the status if the event has been written to disk and an empty sequence if not
-:)
-declare function qe:event-status($event as element(queue:event)) as xs:string? {
-    xdmp:node-metadata-value($event, qc:status-metadata-name())
-};
-
-(:~ 
- : Get the queue timestamp for an event node 
- : @param $event the event element
- : @return the timestamp if the event has been written to disk and an empty sequence if not
-:)
-declare function qe:event-timestamp($event as element(queue:event)) as xs:dateTime? {
-    xs:dateTime(xdmp:node-metadata-value($event, qc:timestamp-metadata-name()))
-};
-
-
 (:~
  : Given an item convert it to something we can serialize in the payload
  : and return that and the type name we want to give it as a hint on loading

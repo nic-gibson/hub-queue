@@ -7,7 +7,6 @@ import module namespace ql = "http://noslogan.org/components/hub-queue/queue-log
 import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "queue-event.xqy";
 import module namespace qh = "http://noslogan.org/components/hub-queue/queue-handler" at "queue-handler.xqy";
 
-
 declare namespace queue = "http://noslogan.org/hub-queue";
 
 declare option xdmp:mapping "false";
@@ -18,16 +17,16 @@ declare option xdmp:mapping "false";
 
 
 (:~ 
- : Given an event URI, load and process the event, setting the status
+ : Given an event id, load and process the event, setting the status
  : to the result of the query. process the event if it is found; if not
  : found just issure a warning. If the executor is not found, fail the event
  : and issue an error.
- : @param $uri the event URI
+ : @param $id the event id
  : @return the new status set
 :)
-declare function qx:execute-event($uri as xs:string) as xs:string? {
+declare function qx:execute-event($id as xs:string) as xs:string? {
 
-    let $event := qh:get-event($uri, qc:executing-status())
+    let $event := qh:get-event($id, qc:executing-status())
     
     let $status := if (fn:exists($event))
         then
@@ -39,22 +38,21 @@ declare function qx:execute-event($uri as xs:string) as xs:string? {
                         qc:finished-status())[1]
                     return (
                         ql:trace-events("Event executed", $event),
-                        ql:audit-events("Event executed", $uri, $event, $status, (), ()),
+                        ql:audit-events("Event executed", $id, $event, $status, (), ()),
                         $status
                     )
                 else (
-                    ql:audit-events("Event executor does not exist", $uri, $event, qc:failed-status(), (), ()),
-                    ql:error-events("Event executor does not exist", $event),
+                    ql:audit-events("Event executor does not exist", $id, $event, qc:failed-status(), (), ()),
+                    ql:error-events("Event executor does not exist", (), $event),
                     qc:failed-status()
                 )
 
             else (
-                ql:audit-events("Event URI does not exist", $uri, (), (), (), ()),
-                ql:warn-uris("Event URI does not exist", $uri)
+                ql:audit-events("Event ID does not exist", $id, (), (), (), ()),
+                ql:warn-ids("Event ID does not exist", $id)
             )
 
-    let $new-uri := qh:write(qe:create(qc:event-update-status(), qc:internal-source(), $status, $uri, fn:true()))
-    return $status
+    return qh:set-status($id, $status)
 };
 
 
@@ -102,7 +100,7 @@ declare function qx:find-executor($event as element(queue:event)) as element(que
                 else xdmp:javascript-eval($module, $variables, $options)
     } catch ($e) {
         (
-            ql:error-uris("Error executing event", $e, xdmp:node-uri($event), qe:source($event), qe:type($event)),
+            ql:error-ids("Error executing event", $e, qe:id($event), qe:source($event), qe:type($event)),
             ql:audit-events("Error executing event", $event, (), (), (), $e),
             qc:failed-status()            
         )

@@ -27,7 +27,7 @@ declare option xdmp:mapping "false";
  :)
 declare function qt:heartbeat($heartbeat-type as xs:string) as xs:string* {
     let $configs := qt:find-heartbeat-configs($heartbeat-type)
-    let $_ := ql:trace-uris("Processing heartbeat of type " || $heartbeat-type || ", found " || fn:count($configs) || " configs to process.", ())
+    let $_ := ql:trace-ids("Processing heartbeat of type " || $heartbeat-type || ", found " || fn:count($configs) || " configs to process.", ())
     return qt:create-heartbeat-events($configs)
 };
 
@@ -62,7 +62,7 @@ declare function qt:create-heartbeat-events($configs as element(queue:heartbeat-
                 ())
             )
             else 
-                ql:warn-uris("Heartbeat config:&#xA0;" || xdmp:quote($config) || "&#xA0; is incomplete and will be skipped", ())
+                ql:warn-ids("Heartbeat config:&#xA0;" || xdmp:quote($config) || "&#xA0; is incomplete and will be skipped", ())
 };
 
 

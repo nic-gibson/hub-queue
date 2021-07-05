@@ -1,0 +1,10 @@
+{
+   "task-enabled": true, 
+   "task-path": "/components/hub-queue/tasks/status-cleanup.xqy", 
+   "task-root": "/", 
+   "task-type": "minutely", 
+   "task-period": 1, 
+   "task-database": "%%mlStagingDbName%%", 
+   "task-modules": "%%mlModulesDbName%%", 
+   "task-user": "nobody"
+}
