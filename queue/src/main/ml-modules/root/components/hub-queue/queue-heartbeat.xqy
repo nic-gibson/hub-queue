@@ -64,6 +64,3 @@ declare function qt:create-heartbeat-events($configs as element(queue:heartbeat-
             else 
                 ql:warn-ids("Heartbeat config:&#xA0;" || xdmp:quote($config) || "&#xA0; is incomplete and will be skipped", ())
 };
-
-
-

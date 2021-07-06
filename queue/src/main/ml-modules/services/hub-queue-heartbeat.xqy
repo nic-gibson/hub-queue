@@ -38,7 +38,7 @@ declare function put(
                                 $ids ! element list:event { element list:event-id { . } }
                             }
                         else if ($output = "application/json") 
-                            then json:object() => map:with("resultList", json:to-array($ids))
+                            then array-node { $ids }
                             else fn:string-join($ids, "&#x0D;&#x0A;")
                 }
             )

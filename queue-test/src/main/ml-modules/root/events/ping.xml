@@ -2,14 +2,14 @@
     <q:executor>
         <q:source>http://noslogan.org/hub-queue/source/heartbeat</q:source>
         <q:type>http://noslogan.org/hub-queue/event/ping</q:type>
-        <q:module>/components/hub-queue/handlers/ping.xqy</q:module>
+        <q:module>/handlers/ping.xqy</q:module>
         <q:language>xquery</q:language>
     </q:executor>
 
     <q:executor>
         <q:source>http://noslogan.org/hub-queue/source/heartbeat</q:source>
         <q:type>http://noslogan.org/hub-queue/event/ping</q:type>
-        <q:module>/components/hub-queue/handlers/jsping.xqy</q:module>
+        <q:module>/handlers/jsping.xqy</q:module>
         <q:language>javascript</q:language>
     </q:executor>
 

@@ -17,7 +17,7 @@ import module namespace qc = "http://noslogan.org/components/hub-queue/queue-con
 import module namespace qe = "http://noslogan.org/components/hub-queue/queue-event" at "/components/hub-queue/queue-event.xqy";
 import module namespace test = "http://marklogic.com/test" at "/test/utils/test-helper.xqy";
 
-let $event := qh:get-event-documents(1, qc:new-status(), ())
+let $event := qh:get-event-nodes(1, qc:new-status(), ())
 
 return (
     test:assert-exists($event),

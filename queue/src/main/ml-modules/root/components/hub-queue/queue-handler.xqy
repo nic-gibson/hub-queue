@@ -79,7 +79,7 @@ declare function qh:status-uri($id as xs:string, $status as xs:string) as xs:any
  : @param $status the new status to be set
  : @return the new status
 ~:)
-declare function qh:set-status($event-ids as xs:string*, $status as xs:string) as xs:string {
+declare function qh:set-status($event-ids as xs:string*, $status as xs:string) as xs:string* {
     
     for $id in $event-ids 
         let $uri := qh:status-uri($id, $status)
@@ -154,13 +154,11 @@ declare function qh:get-timestamp($event-id as xs:string) as xs:dateTime? {
 
     xdmp:invoke-function( function() {
 
-        let $results := (op:from-view("queue", "queue")
-            => op:order-by(op:desc(op:col("priority")))
-            => op:order-by(op:asc(op:col("updated")))
+        let $results := (op:from-view("queue", "status")
             => op:where(op:eq(op:col("status"), $current-status))
-            => op:select("uri")
+            => op:select("id")
             => op:limit($count)
-            => op:result("object")) ! map:get(., "queue.queue.id")
+            => op:result("object")) ! map:get(., "queue.status.id")
 
         let $_ := if (fn:exists($new-status)) 
             then qh:set-status($results, $new-status)
@@ -177,35 +175,33 @@ declare function qh:get-timestamp($event-id as xs:string) as xs:dateTime? {
 
 
  (:~
- : Get N event documents from the queue, setting the status if a status is provided
+ : Get N event nodes from the queue, setting the status if a status is provided
  : Events are retrieved in time order (oldest first)
  : @param $count the number of event documents to retrieve from the queue
  : @param $current-status the status of the events to be retrieved
  : @param $new-status the status to be set if required
  : @return a sequence of queue:event nodes
  :)
- declare function qh:get-event-documents($count as xs:positiveInteger, $current-status as xs:string, $new-status as xs:string?) as element(queue:event)* {
+ declare function qh:get-event-nodes($count as xs:positiveInteger, $current-status as xs:string, $new-status as xs:string?) as element(queue:event)* {
 
-    xdmp:invoke-function( function() {
+     xdmp:invoke-function( function() {
 
-        let $results := (op:from-view("queue", "queue", ()) 
-            => op:order-by("updated")
+        let $results := (op:from-view("queue", "status")
             => op:where(op:eq(op:col("status"), $current-status))
-            => op:select("uri")
+            => op:select("id")
             => op:limit($count)
-            => op:result("object")) ! map:get(., "queue.queue.uri")
+            => op:result("object")) ! map:get(., "queue.status.id")
 
         let $_ := if (fn:exists($new-status)) 
             then qh:set-status($results, $new-status)
             else ()
 
-        return $results ! fn:doc(.)/node()
+        return $results ! fn:doc(qh:uri(.))/node()
 
     }, map:new() 
         => map:with("database", xdmp:database(qc:database()))
         => map:with("isolation", "different-transaction")
         => map:with("update", "true"))
-
  };
 
 (:~ 

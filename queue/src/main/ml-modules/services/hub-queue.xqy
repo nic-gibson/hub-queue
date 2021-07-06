@@ -35,7 +35,7 @@ declare function get($context as map:map, $params as map:map) as document-node()
                     $events ! element list:event-id { . }
                 }
             else if ($output = "application/json") 
-                then json:object() => map:with("eventList", json:to-array($events))
+                then array-node { $events  }
                 else fn:string-join($events, "&#x0D;&#x0A;")
         }
     )
@@ -76,9 +76,13 @@ declare function put(
                         }
                 }
             else if ($output = "application/json") 
-                then json:object() => map:with("resultList", json:to-array(
-                    for $id at $pos in $ids return 
-                        json:object() => map:with("id", $id) => map:with("status", $status-list[$pos])))
+                then array-node {
+                    for $id at $pos in $ids 
+                        return  object-node {
+                            "id": $id,
+                            "status": $status-list[$pos]
+                        }
+                }
                 else fn:string-join(
                     (for $id at $pos in $ids return $id || "," || $status-list[$pos]),
                      "&#x0D;&#x0A;")

@@ -9,7 +9,7 @@ declare variable $queue:source as xs:string external;
 declare variable $queue:type as xs:string external;
 declare variable $queue:payload as item() external;
 declare variable $queue:config as element(queue:config)? external;
-declare variable $queue:ids as xs:string* external;
+declare variable $queue:uris as xs:string* external;
 
 
 (:~ 
@@ -19,6 +19,6 @@ declare variable $queue:ids as xs:string* external;
  : and updates the collections on each of the URIs to add "PINGED" to them
  :)
 (
-    ql:log-ids("PING EVENT", $queue:uris, $queue:source, $queue:type),
-    $queue:ids ! xdmp:document-add-collections(qh:uri(.), 'PINGED')
+    ql:log-ids("PING EVENT", (), $queue:source, $queue:type),
+    $queue:uris ! xdmp:document-add-collections(., 'PINGED')
 )
