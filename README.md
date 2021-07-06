@@ -17,7 +17,9 @@ A _queue executor_ is a Javascript or XQuery module that is run to process a que
 
 The queue function is executed in an isolated transaction with update set to true. declareUpdate is set on the javascript module
 
+
 ### Javascript example
+
 
 ```
 "use strict";
